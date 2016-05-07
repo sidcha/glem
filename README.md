@@ -1,5 +1,5 @@
 # glem - Graphical LCD Emulator
-A tiny (minimal) Graphical LCD emulator for speeding up UI developement time for embedded devics.
+A tiny (minimal) Graphical LCD emulator for speeding up UI developement of embedded devics.
 
 ### Dependencies
 * freeglut3
