@@ -37,11 +37,20 @@
 #include <GL/glut.h>
 #include <GL/gl.h>
 
+// The GLCD width and height in pixel
 #define GLCD_WIDTH_PIX		240
 #define GLCD_HEIGHT_PIX		128
-#define GLCD_BUF_LEN		((GLCD_WIDTH_PIX/8)*GLCD_HEIGHT_PIX)
+
+// Unix socket location
 #define ADDRESS			"/tmp/glcdSocket"
+
+// On high res monitors, a small GLCDs may look very
+// small. Scale factor is used to scale up the size.
+// In this case it is scaled up 4 times.
 #define SCALE_FACTOR		4
+
+// Internal Macros
+#define GLCD_BUF_LEN		((GLCD_WIDTH_PIX/8)*GLCD_HEIGHT_PIX)
 #define GL_WIDTH		(GLCD_WIDTH_PIX * SCALE_FACTOR + 100)
 #define GL_HEIGHT		(GLCD_HEIGHT_PIX * SCALE_FACTOR + 100)
 #define GL_GLCD_SCALED_WIDTH	(GLCD_WIDTH_PIX*SCALE_FACTOR)
@@ -52,6 +61,7 @@
 #define convertLocalToGL(x,y) do { x = GL_GLCD_ORIGIN_X + (x * SCALE_FACTOR); \
 	y = GL_GLCD_ORIGIN_Y + (y * SCALE_FACTOR); } while(0)
 
+// Globals
 uint8_t *glcdFrame;
 uint8_t glutBuf[GL_WIDTH * GL_HEIGHT * 3];
 int gListeningSocket;
@@ -157,6 +167,9 @@ void glcdInit(int *argc, char **argv)
 		// parent process.
 		return;
 	}
+
+	// This thread reads from glcdFrame buffer and writes it 
+	// into the GLUT window. This is a pure consumer.
 
 	prctl(PR_SET_PDEATHSIG, SIGINT);
 	signal(SIGINT, glutSigHandler);
