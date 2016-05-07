@@ -77,7 +77,6 @@ void glutSetScaledPixel(int x, int y, int color)
 	}
 }
 
-
 void makeGLUTBuf()
 {
 	int i, j, pix;
