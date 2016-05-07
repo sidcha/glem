@@ -144,6 +144,7 @@ void glutDrawRectThick(int x, int y, int w, int h, int tx, int ty, int color)
 
 void glutSigHandler(int sigNum)
 {
+	shutdown(gListeningSocket, SHUT_RDWR);
 	close(gListeningSocket);
 	unlink(ADDRESS);
 	exit(0);
@@ -243,3 +244,4 @@ int main(int argc, char *argv[])
 	close(gListeningSocket);
 	return 0;
 }
+
