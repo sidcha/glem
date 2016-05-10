@@ -37,10 +37,6 @@
 #include <GL/glut.h>
 #include <GL/gl.h>
 
-// The GLCD width and height in pixel
-#define GLCD_WIDTH_PIX		240
-#define GLCD_HEIGHT_PIX		128
-
 // Unix socket location
 #define ADDRESS			"/tmp/glcdSocket"
 
@@ -50,71 +46,72 @@
 #define SCALE_FACTOR		4
 
 // Internal Macros
-#define GLCD_BUF_LEN		((GLCD_WIDTH_PIX/8)*GLCD_HEIGHT_PIX)
-#define GL_WIDTH		(GLCD_WIDTH_PIX * SCALE_FACTOR + 100)
-#define GL_HEIGHT		(GLCD_HEIGHT_PIX * SCALE_FACTOR + 100)
-#define GL_GLCD_SCALED_WIDTH	(GLCD_WIDTH_PIX*SCALE_FACTOR)
-#define GL_GLCD_SCALED_HEIGHT	(GLCD_HEIGHT_PIX*SCALE_FACTOR)
-#define GL_GLCD_ORIGIN_X	((GL_WIDTH/2)-(GL_GLCD_SCALED_WIDTH/2))
-#define GL_GLCD_ORIGIN_Y	((GL_HEIGHT/2)-(GL_GLCD_SCALED_HEIGHT/2))
-#define glcdGetPixel(a,x,y) (a[y * (GLCD_WIDTH_PIX / 8) + (x / 8)] & (1 << (7 - x % 8)));
-#define convertLocalToGL(x,y) do { x = GL_GLCD_ORIGIN_X + (x * SCALE_FACTOR); \
-	y = GL_GLCD_ORIGIN_Y + (y * SCALE_FACTOR); } while(0)
+#define glcd_get_pixel(a,x,y) (a[y * (glcd_width / 8) + (x / 8)] & (1 << (7 - x % 8)));
+#define convert_local_to_glut(x,y) do { x = window_origin_x + (x * scale_factor); \
+	y = window_origin_y + (y * scale_factor); } while(0)
 
 // Globals
-uint8_t *glcdFrame;
-uint8_t glutBuf[GL_WIDTH * GL_HEIGHT * 3];
+uint8_t *glcd_frame;
+uint8_t *glut_buf;
 int gListeningSocket;
 
-void glutSetPixel(int x, int y, int color)
+int glcd_buf_len;
+int glcd_width;
+int glcd_height;
+int scale_factor;
+int window_origin_x;
+int window_origin_y;
+int gl_width;
+int gl_height;
+
+void glut_set_pixel(int x, int y, int color)
 {
 	int i=0;
 	for(i=0; i < 3; i++ ) {  //RGB Mirrors
-		glutBuf[(y*GL_WIDTH+x)*3+i] = color;
+		glut_buf[(y*gl_width+x)*3+i] = color;
 	}
 }
 
-void glutSetScaledPixel(int x, int y, int color)
+void glut_set_scaled_pixel(int x, int y, int color)
 {
-	int i, j, setVal=0;
-	if (color)
-		setVal = 255;
-	convertLocalToGL(x, y);
-	for (i=x; i<(x+SCALE_FACTOR); i++) {
-		for (j=y; j<(y+SCALE_FACTOR); j++) {
-			glutSetPixel(i, j, setVal);
+	int i, j, setVal;
+	setVal = color ? 255 : 0;
+	convert_local_to_glut(x, y);
+	for (i=x; i<(x+scale_factor); i++) {
+		for (j=y; j<(y+scale_factor); j++) {
+			glut_set_pixel(i, j, setVal);
 		}
 	}
 }
 
-void makeGLUTBuf()
+void make_glut_buf()
 {
 	int i, j, pix;
-	for (i=0; i<GLCD_WIDTH_PIX; i++) {
-		for (j=0; j<GLCD_HEIGHT_PIX; j++) {
-			pix = glcdGetPixel(glcdFrame, i, j);
-			glutSetScaledPixel(i,(GLCD_HEIGHT_PIX-1)-j, pix);
+	for (i=0; i<glcd_width; i++) {
+		for (j=0; j<glcd_height; j++) {
+			pix = glcd_get_pixel(glcd_frame, i, j);
+			glut_set_scaled_pixel(i, glcd_height-1-j, pix);
 		}
 	}
 }
 
-void glutDrawScreen()
+void glut_draw_screen()
 {
-	makeGLUTBuf();
-	glDrawPixels(GL_WIDTH, GL_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, glutBuf);
+	make_glut_buf();
+	glDrawPixels(gl_width, gl_height, GL_RGB, GL_UNSIGNED_BYTE, glut_buf);
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
 
 void reshape(int x, int y)
 {
-	glViewport(0, 0, (GLsizei) GL_WIDTH, (GLsizei) GL_HEIGHT);
+	glViewport(0, 0, (GLsizei) gl_width+100, (GLsizei) gl_height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.0, GL_WIDTH, 0.0, GL_HEIGHT, -1.f, 1.f);
+	glOrtho(0.0, gl_width+100, 0.0, gl_height, -1.f, 1.f);
 }
 
-void glutDrawRectThick(int x, int y, int w, int h, int tx, int ty, int color)
+void draw_rect_thick(int x, int y, int w, int h, int tx, int ty, int color)
 {
 	int i, t;
 
@@ -129,55 +126,69 @@ void glutDrawRectThick(int x, int y, int w, int h, int tx, int ty, int color)
 	for (i=x; i<x+w; i++) {
 		/* Top and bottom sides */
 		for (t=0; t<(ty); t++) {
-			glutSetPixel(i, y+t, color);
-			glutSetPixel(i, y+h-1-t, color);
+			glut_set_pixel(i, y+t, color);
+			glut_set_pixel(i, y+h-1-t, color);
 		}
 	}
 	for (i=y; i<y+h; i++) {
 		/* Left and right sides */
 		for (t=0; t<(tx); t++) {
-			glutSetPixel(x+t, i, color);
-			glutSetPixel(x+w-1-t, i, color);
+			glut_set_pixel(x+t, i, color);
+			glut_set_pixel(x+w-1-t, i, color);
 		}
 	}
 }
 
-void glutSigHandler(int sigNum)
+void glut_sig_handler(int sigNum)
 {
+	printf("GLUT sig handler\n");
 	shutdown(gListeningSocket, SHUT_RDWR);
 	close(gListeningSocket);
 	unlink(ADDRESS);
 	exit(0);
 }
 
-void glemSigHandler(int sigNum)
+void glem_sig_handler(int sigNum)
 {
+	printf("GLEM sig handler\n");
 	exit(0);
 }
 
-void glcdInit(int *argc, char **argv)
+void glem_sig_chld_handler(int sigNum)
+{
+	printf("<<< [%d] <<< [%d]\n", getppid(), getpid());
+	//exit(0);
+}
+
+void glut_init(int *argc, char **argv)
 {
 	int pid;
-	glcdFrame = mmap(NULL, sizeof(uint8_t)*GLCD_BUF_LEN,
+	glcd_frame = mmap(NULL, sizeof(uint8_t)*glcd_buf_len,
 			PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (glcdFrame == NULL) {
+	if (glcd_frame == NULL) {
 		printf("GLCD alloc Failed!!\n");
 		exit(-1);
 	}
-	if ((pid = fork()) != 0) {
+	pid = fork();
+	if(pid != 0) {
+		printf(">>> [%d] >>> [%d]\n", getppid(), getpid());
 		// parent process.
 		return;
 	}
-
+	printf(">>> [%d] >>> [%d]\n", getppid(), getpid());
+	glut_buf = malloc(sizeof(uint8_t)*gl_width*gl_height*3);
+	if (glut_buf == NULL) {
+		printf("GLUT buf alloc failed\n");
+		exit(-1);
+	}
 	// This thread reads from glcdFrame buffer and writes it 
 	// into the GLUT window. This is a pure consumer.
-
 	prctl(PR_SET_PDEATHSIG, SIGINT);
-	signal(SIGINT, glutSigHandler);
-	glutInitWindowSize(GL_WIDTH, GL_HEIGHT);
+	signal(SIGINT, glut_sig_handler);
+	glutInitWindowSize(gl_width+100, gl_height+100);
 	glutInit(argc, argv);
 	glutReshapeFunc(reshape);
-	glutIdleFunc(glutDrawScreen);
+	glutIdleFunc(glut_draw_screen);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutCreateWindow("GLCD Emulator v0.01");
 	glClearColor(1.0, 1.0, 1.0, 0.0);
@@ -188,18 +199,57 @@ void glcdInit(int *argc, char **argv)
 	glLoadIdentity();
 	glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
 	glClear(GL_POINT_BIT);
-	glutDrawRectThick(GL_GLCD_ORIGIN_X-2, GL_GLCD_ORIGIN_Y-2,
-		GL_GLCD_SCALED_WIDTH+4, GL_GLCD_SCALED_HEIGHT+4, 2, 2, 255);
+	printf("Got here so far so good\n");
+	//draw_rect_thick(window_origin_x-2, window_origin_y-2, gl_width+4, gl_height+4, 2, 2, 255);
 	// This is blocking!
 	glutMainLoop();
 	// Should never get here.
 }
 
+void print_usage()
+{
+	printf("Usage: glem -w GLCD_WIDTH -h GLCD_HEIGHT -s SCALE_FACTOR\n");
+}
 
 int main(int argc, char *argv[])
 {
-	signal(SIGINT, glemSigHandler);
-	glcdInit(&argc, argv);
+	signal(SIGINT, glem_sig_handler);
+	signal(SIGCHLD, glem_sig_chld_handler);
+	printf(">>> [%d] >>> [%d]\n", getppid(), getpid());
+	/*
+	if (argc < 4) {
+		print_usage();
+		exit(-1);
+	}
+	int opt;
+	while ((opt = getopt(argc, argv, "w:h:s:")) != -1) {
+		switch(opt) {
+		case 'w': 
+			glcd_width = atoi(optarg);
+			break;
+		case 'h':
+			glcd_height = atoi(optarg);
+			break;
+		case 's':
+			scale_factor = atoi(optarg);
+			break;
+		default:// '?'
+			printf("Invalid arguement!\n");
+			print_usage();
+			exit(-1);
+		}
+	}
+	*/
+	gl_width = 240;
+	gl_height = 128;
+	scale_factor = 4;
+	gl_width = glcd_width*scale_factor;
+	gl_height = glcd_height*scale_factor;
+	glcd_buf_len = glcd_width/8*glcd_height;
+	window_origin_x = ((100+gl_width)/2)-(gl_width/2);
+	window_origin_y = ((100+gl_height)/2)-(gl_height/2);
+	glut_init(&argc, argv);		// may modify argc and argv.
+		printf("#");
 	if ((gListeningSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		perror("server: socket");
 		exit(1);
@@ -209,6 +259,7 @@ int main(int argc, char *argv[])
 	sockServ.sun_family = AF_UNIX;
 	strcpy(sockServ.sun_path, ADDRESS);
 	unlink(ADDRESS);
+
 	socklen_t sockLen = sizeof(sockServ.sun_family) + strlen(sockServ.sun_path);
 	if (bind(gListeningSocket, (const struct sockaddr *)&sockServ, sockLen) < 0) {
 		perror("server: bind");
@@ -220,6 +271,7 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
+		printf(".");
 		int clientFD, rec;
 		struct sockaddr_un clientSock;
 		socklen_t clientLen = sizeof(clientSock);
@@ -227,8 +279,8 @@ int main(int argc, char *argv[])
 			perror("server: accept");
 			exit(1);
 		}
-		uint8_t tmp[GLCD_BUF_LEN];
-		if ((rec = read(clientFD, tmp, GLCD_BUF_LEN)) < 0) {
+		uint8_t tmp[10*1000];
+		if ((rec = read(clientFD, tmp, glcd_buf_len)) < 0) {
 			perror("[ ! ] ERROR reading from socket");
 			exit(-1);
 		}
@@ -236,7 +288,7 @@ int main(int argc, char *argv[])
 		// Race condition: The consumer theread may have been
 		// reading when we call memcpy here causing tear. But
 		// that's something we can't live with.
-		memcpy(glcdFrame, tmp, GLCD_BUF_LEN);
+		memcpy(glcd_frame, tmp, glcd_buf_len);
 		close(clientFD);
 	}
 	// close left here for sytactic sugar.
