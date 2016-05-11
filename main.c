@@ -53,7 +53,7 @@
 // Globals
 uint8_t *glcd_frame;
 uint8_t *glut_buf;
-int gListeningSocket;
+int server_sock_fd;
 
 int glcd_buf_len;
 int glcd_width;
@@ -142,8 +142,8 @@ void draw_rect_thick(int x, int y, int w, int h, int tx, int ty, int color)
 void glut_sig_handler(int sigNum)
 {
 	printf("GLUT sig handler\n");
-	shutdown(gListeningSocket, SHUT_RDWR);
-	close(gListeningSocket);
+	shutdown(server_sock_fd, SHUT_RDWR);
+	close(server_sock_fd);
 	unlink(ADDRESS);
 	exit(0);
 }
@@ -156,7 +156,7 @@ void glem_sig_handler(int sigNum)
 
 void glem_sig_chld_handler(int sigNum)
 {
-	printf("<<< [%d] <<< [%d]\n", getppid(), getpid());
+	printf("CHD: PPID[%d] PID[%d]\n", getppid(), getpid());
 	//exit(0);
 }
 
@@ -171,11 +171,10 @@ void glut_init(int *argc, char **argv)
 	}
 	pid = fork();
 	if(pid != 0) {
-		printf(">>> [%d] >>> [%d]\n", getppid(), getpid());
 		// parent process.
 		return;
 	}
-	printf(">>> [%d] >>> [%d]\n", getppid(), getpid());
+	printf("MN: PPID[%d] PID[%d]\n", getppid(), getpid());
 	glut_buf = malloc(sizeof(uint8_t)*gl_width*gl_height*3);
 	if (glut_buf == NULL) {
 		printf("GLUT buf alloc failed\n");
@@ -199,11 +198,11 @@ void glut_init(int *argc, char **argv)
 	glLoadIdentity();
 	glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
 	glClear(GL_POINT_BIT);
-	printf("Got here so far so good\n");
-	//draw_rect_thick(window_origin_x-2, window_origin_y-2, gl_width+4, gl_height+4, 2, 2, 255);
-	// This is blocking!
-	glutMainLoop();
-	// Should never get here.
+	draw_rect_thick(window_origin_x-2, window_origin_y-2, gl_width+4, gl_height+4, 2, 2, 255);
+	glutMainLoop();	// This is blocking!
+	printf("Got out of glutMainLoop()");
+	exit (0);	// Should never get here.
+	
 }
 
 void print_usage()
@@ -215,8 +214,7 @@ int main(int argc, char *argv[])
 {
 	signal(SIGINT, glem_sig_handler);
 	signal(SIGCHLD, glem_sig_chld_handler);
-	printf(">>> [%d] >>> [%d]\n", getppid(), getpid());
-	/*
+	printf("MA: PPID[%d] PID[%d]\n", getppid(), getpid());
 	if (argc < 4) {
 		print_usage();
 		exit(-1);
@@ -239,18 +237,15 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 	}
-	*/
-	gl_width = 240;
-	gl_height = 128;
-	scale_factor = 4;
 	gl_width = glcd_width*scale_factor;
 	gl_height = glcd_height*scale_factor;
 	glcd_buf_len = glcd_width/8*glcd_height;
 	window_origin_x = ((100+gl_width)/2)-(gl_width/2);
 	window_origin_y = ((100+gl_height)/2)-(gl_height/2);
+	printf("GL(%d,%d) - GLCD(%d,%d), - O(%d,%d) - SD:%d\n", gl_width, gl_height,
+		glcd_width, glcd_height, window_origin_x, window_origin_y, scale_factor);
 	glut_init(&argc, argv);		// may modify argc and argv.
-		printf("#");
-	if ((gListeningSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+	if ((server_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		perror("server: socket");
 		exit(1);
 	}
@@ -261,26 +256,25 @@ int main(int argc, char *argv[])
 	unlink(ADDRESS);
 
 	socklen_t sockLen = sizeof(sockServ.sun_family) + strlen(sockServ.sun_path);
-	if (bind(gListeningSocket, (const struct sockaddr *)&sockServ, sockLen) < 0) {
+	if (bind(server_sock_fd, (const struct sockaddr *)&sockServ, sockLen) < 0) {
 		perror("server: bind");
 		exit(1);
 	}
-	if (listen(gListeningSocket, 5) < 0) {
+	if (listen(server_sock_fd, 5) < 0) {
 		perror("server: listen");
 		exit(1);
 	}
 
 	while (1) {
-		printf(".");
-		int clientFD, rec;
+		int client_fd, rec;
 		struct sockaddr_un clientSock;
 		socklen_t clientLen = sizeof(clientSock);
-		if ((clientFD = accept(gListeningSocket, (struct sockaddr *)&clientSock, &clientLen)) < 0) {
+		if ((client_fd = accept(server_sock_fd, (struct sockaddr *)&clientSock, &clientLen)) < 0) {
 			perror("server: accept");
 			exit(1);
 		}
 		uint8_t tmp[10*1000];
-		if ((rec = read(clientFD, tmp, glcd_buf_len)) < 0) {
+		if ((rec = read(client_fd, tmp, glcd_buf_len)) < 0) {
 			perror("[ ! ] ERROR reading from socket");
 			exit(-1);
 		}
@@ -289,11 +283,11 @@ int main(int argc, char *argv[])
 		// reading when we call memcpy here causing tear. But
 		// that's something we can't live with.
 		memcpy(glcd_frame, tmp, glcd_buf_len);
-		close(clientFD);
+		close(client_fd);
 	}
 	// close left here for sytactic sugar.
 	// the socket is closed in signal handler on exit.
-	close(gListeningSocket);
+	close(server_sock_fd);
 	return 0;
 }
 
