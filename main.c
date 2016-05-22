@@ -148,10 +148,10 @@ void glut_init(int *argc, char **argv)
 	char win_name[64];
 	gl_pid = fork();
 	if (gl_pid == (pid_t)(-1)) {
-		fprintf(stderr, "GLEM Fork failed!\n");
+		perror("Fork");
 		exit(-1);
 	}
-	if (gl_pid == 0) {
+	if (gl_pid != 0) {
 		// parent process.
 		return;
 	}
@@ -190,13 +190,14 @@ void glut_init(int *argc, char **argv)
 void glem_sigchld_handler(int sigNum)
 {
 	pid_t pid;
-	if (gl_pid <= 0)
+	if (gl_pid <= 0) // glem has not started.
 		return;
 	// Run through all the child processes to see if our
 	// prodigal son has died. If he did, then glem quits.
-	pid = waitpid(-1, NULL, WNOHANG);
-	if (pid == gl_pid)
-		exit(0);
+	while ((pid = waitpid(gl_pid, NULL, WNOHANG)) != -1) {
+		if (pid == gl_pid)
+			exit(0);
+	}
 }
 
 void print_usage()
@@ -206,7 +207,9 @@ void print_usage()
 
 int main(int argc, char *argv[])
 {
-	int opt;
+	int opt, glcd_buf_len;
+	char path[64];
+	uint8_t *tmp_read_buf;
 	signal(SIGCHLD, glem_sigchld_handler);
 	while ((opt = getopt(argc, argv, "w:h:s:")) != -1) {
 		switch(opt) {
@@ -227,16 +230,23 @@ int main(int argc, char *argv[])
 	}
 	gl_width = glcd_width * scale_factor + GL_PAD;
 	gl_height = glcd_height * scale_factor + GL_PAD;
-	int glcd_buf_len = (glcd_width/8) * glcd_height;
+	glcd_buf_len = (glcd_width/8) * glcd_height;
 	window_origin_x = (gl_width/2)-((gl_width-GL_PAD)/2);
 	window_origin_y = (gl_height/2)-((gl_height-GL_PAD)/2);
 	glcd_frame = mmap(NULL, sizeof(uint8_t)*glcd_buf_len,
-			PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+		PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 	if (glcd_frame == NULL) {
 		printf("GLCD alloc Failed!!\n");
 		exit(-1);
 	}
+	tmp_read_buf = malloc(sizeof(uint8_t)*glcd_buf_len);
+	if (tmp_read_buf == NULL) {
+		printf("GLCD tmp read buf alloc Failed!!\n");
+		exit(-1);
+	}
+
 	glut_init(&argc, argv);		// may modify argc and argv.
+
 	if ((server_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		perror("server: socket");
 		exit(1);
@@ -244,8 +254,9 @@ int main(int argc, char *argv[])
 
 	struct sockaddr_un sockServ;
 	sockServ.sun_family = AF_UNIX;
-	strcpy(sockServ.sun_path, ADDRESS);
-	unlink(ADDRESS);
+	snprintf(path, 64, "%s%dx%d", ADDRESS, glcd_width, glcd_height);
+	strcpy(sockServ.sun_path, path);
+	unlink(path);
 
 	socklen_t sockLen = sizeof(sockServ.sun_family) + strlen(sockServ.sun_path);
 	if (bind(server_sock_fd, (const struct sockaddr *)&sockServ, sockLen) < 0) {
@@ -265,15 +276,14 @@ int main(int argc, char *argv[])
 			perror("server: accept");
 			exit(1);
 		}
-		uint8_t tmp[10*1000];
-		if ((rec = read(client_fd, tmp, glcd_buf_len)) < 0) {
+		if ((rec = read(client_fd, tmp_read_buf, glcd_buf_len)) < 0) {
 			perror("[ ! ] ERROR reading from socket");
 			exit(-1);
 		}
 		// Race condition: The consumer theread may have been
 		// reading when we call memcpy here causing tear. But
 		// we can live with it.
-		memcpy(glcd_frame, tmp, glcd_buf_len);
+		memcpy(glcd_frame, tmp_read_buf, glcd_buf_len);
 		close(client_fd);
 	}
 	// close left here for sytactic sugar.

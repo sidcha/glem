@@ -30,9 +30,12 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 
+int width, height;
+
 void glcdServerSend(uint8_t *buf, int len)
 {
 	int glemFD;
+	char path[64];
 	socklen_t sockLen;
 	struct sockaddr_un servAddr;
 
@@ -42,7 +45,8 @@ void glcdServerSend(uint8_t *buf, int len)
 	}
 
 	servAddr.sun_family = AF_UNIX;
-	strcpy(servAddr.sun_path, "/tmp/glcdSocket");
+	snprintf(path, 64, "/tmp/glcdSocket%dx%d", width, height);
+	strcpy(servAddr.sun_path, path);
 
 	sockLen = sizeof(servAddr.sun_family) + strlen(servAddr.sun_path);
 
@@ -64,19 +68,19 @@ int main(int argc, char *argv[])
 		printf("Usage: %s <widthPixel> <heightPixel>\n", argv[0]);
 		exit (0);
 	}
-	int w = atoi(argv[1]);
-	int h = atoi(argv[2]);
-	if ( w <=0 || h <=0) {
+	width = atoi(argv[1]);
+	height = atoi(argv[2]);
+	if ( width <=0 || height <=0) {
 		printf("Invalid input.\n");
 		exit(-1);
 	}
-	uint8_t *buf = malloc (sizeof(uint8_t)* (w/8)*h);
+	uint8_t *buf = malloc (sizeof(uint8_t)* (width/8)*height);
 	if (buf == NULL) {
 		printf("Malloc Failed\n");
 		exit (-1);
 	}
-	memset(buf, 0x55, (w/8)*h);
-	glcdServerSend(buf, (w/8)*h);
+	memset(buf, 0x55, (width/8)*height);
+	glcdServerSend(buf, (width/8)*height);
 	return 0;
 }
 

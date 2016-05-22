@@ -9,16 +9,13 @@ LIBS += -lGLU
 LIBS += -lglut
 
 glem:
-	$(CC) $(CC_FLAGS) main.c $(LIBS) -o glem 
+	$(CC) $(CC_FLAGS) main.c $(LIBS) -o glem.x
 
 all: glem client
 
 client:
 	$(CC) $(CC_FLAGS) clientSample.c $(LIBS) -o client
 
-install: glem
-	install glem /usr/local/bin
-
-.PHONY: clean client glem
+.PHONY: clean client glem glem.x
 clean:
-	-rm glem client
+	-rm glem.x client
