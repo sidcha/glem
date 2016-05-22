@@ -1,7 +1,7 @@
 /***************************************************************************
  * This program is free software: you can redistribute it and/or modify    *
  * it under the terms of the GNU General Public License as published by    *
- * the Free Software Foundation, either version 3 of the License, or       *
+ * the Free Software Foundation, either version 2 of the License, or       *
  * (at your option) any later version.                                     *
  *                                                                         *
  * This program is distributed in the hope that it will be useful,         *
@@ -40,22 +40,16 @@
 // Unix socket location
 #define ADDRESS			"/tmp/glcdSocket"
 
-// On high res monitors, a small GLCDs may look very
-// small. Scale factor is used to scale up the size.
-// In this case it is scaled up 4 times.
-#define SCALE_FACTOR		4
-
-// Internal Macros
 #define glcd_get_pixel(a,x,y) (a[y * (glcd_width / 8) + (x / 8)] & (1 << (7 - x % 8)));
 #define convert_local_to_glut(x,y) do { x = window_origin_x + (x * scale_factor); \
 	y = window_origin_y + (y * scale_factor); } while(0)
+#define GL_PAD 100
 
 // Globals
 uint8_t *glcd_frame;
 uint8_t *glut_buf;
 int server_sock_fd;
 
-int glcd_buf_len;
 int glcd_width;
 int glcd_height;
 int scale_factor;
@@ -68,7 +62,7 @@ void glut_set_pixel(int x, int y, int color)
 {
 	int i=0;
 	for(i=0; i < 3; i++ ) {  //RGB Mirrors
-		glut_buf[(y*gl_width+x)*3+i] = color;
+		glut_buf[(y*gl_width+x)*(3+i)] = color;
 	}
 }
 
@@ -108,7 +102,7 @@ void reshape(int x, int y)
 	glViewport(0, 0, (GLsizei) gl_width+100, (GLsizei) gl_height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.0, gl_width+100, 0.0, gl_height, -1.f, 1.f);
+	glOrtho(0.0, gl_width+100, 0.0, gl_height+100, -1.f, 1.f);
 }
 
 void draw_rect_thick(int x, int y, int w, int h, int tx, int ty, int color)
@@ -162,14 +156,7 @@ void glem_sig_chld_handler(int sigNum)
 
 void glut_init(int *argc, char **argv)
 {
-	int pid;
-	glcd_frame = mmap(NULL, sizeof(uint8_t)*glcd_buf_len,
-			PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (glcd_frame == NULL) {
-		printf("GLCD alloc Failed!!\n");
-		exit(-1);
-	}
-	pid = fork();
+	int pid = fork();
 	if(pid != 0) {
 		// parent process.
 		return;
@@ -184,7 +171,7 @@ void glut_init(int *argc, char **argv)
 	// into the GLUT window. This is a pure consumer.
 	prctl(PR_SET_PDEATHSIG, SIGINT);
 	signal(SIGINT, glut_sig_handler);
-	glutInitWindowSize(gl_width+100, gl_height+100);
+	glutInitWindowSize(gl_width, gl_height);
 	glutInit(argc, argv);
 	glutReshapeFunc(reshape);
 	glutIdleFunc(glut_draw_screen);
@@ -198,7 +185,8 @@ void glut_init(int *argc, char **argv)
 	glLoadIdentity();
 	glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
 	glClear(GL_POINT_BIT);
-	draw_rect_thick(window_origin_x-2, window_origin_y-2, gl_width+4, gl_height+4, 2, 2, 255);
+	draw_rect_thick(window_origin_x-2, window_origin_y-2, 
+		(gl_width-GL_PAD+4), (gl_height-GL_PAD+4), 2, 2, 255);
 	glutMainLoop();	// This is blocking!
 	printf("Got out of glutMainLoop()");
 	exit (0);	// Should never get here.
@@ -237,13 +225,19 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 	}
-	gl_width = glcd_width*scale_factor;
-	gl_height = glcd_height*scale_factor;
-	glcd_buf_len = glcd_width/8*glcd_height;
-	window_origin_x = ((100+gl_width)/2)-(gl_width/2);
-	window_origin_y = ((100+gl_height)/2)-(gl_height/2);
+	gl_width = glcd_width * scale_factor + GL_PAD;
+	gl_height = glcd_height * scale_factor + GL_PAD;
+	int glcd_buf_len = (glcd_width/8) * glcd_height;
+	window_origin_x = (gl_width/2)-((gl_width-GL_PAD)/2);
+	window_origin_y = (gl_height/2)-((gl_height-GL_PAD)/2);
 	printf("GL(%d,%d) - GLCD(%d,%d), - O(%d,%d) - SD:%d\n", gl_width, gl_height,
 		glcd_width, glcd_height, window_origin_x, window_origin_y, scale_factor);
+	glcd_frame = mmap(NULL, sizeof(uint8_t)*glcd_buf_len,
+			PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (glcd_frame == NULL) {
+		printf("GLCD alloc Failed!!\n");
+		exit(-1);
+	}
 	glut_init(&argc, argv);		// may modify argc and argv.
 	if ((server_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		perror("server: socket");
@@ -281,7 +275,7 @@ int main(int argc, char *argv[])
 		printf("Rec: %d bytes from client\n", rec);
 		// Race condition: The consumer theread may have been
 		// reading when we call memcpy here causing tear. But
-		// that's something we can't live with.
+		// we can live with it.
 		memcpy(glcd_frame, tmp, glcd_buf_len);
 		close(client_fd);
 	}
