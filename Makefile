@@ -2,8 +2,7 @@ CC = gcc
 CC_FLAGS += -Wall
 CC_FLAGS += -O3
 CC_FLAGS += -g3
-CC_FLAGS += -fstack-protector-strong
-CC_FLAGS += -Wextra
+#CC_FLAGS += -fstack-protector-strong
 
 LIBS += -lGL
 LIBS += -lGLU
