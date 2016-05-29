@@ -1,7 +1,30 @@
 #!/bin/bash
 
-if [ ! -f glem.x ]; then
-	make glem
-fi
+printUsage() {
+	echo "Usage: $0 serve <width> <height>"
+	echo "Usage: $0 test"
+}
 
-./glem.x -w$1 -h$2 -s3 > /dev/null 2>&1 &
+case "$1" in
+	serve)
+		if [ "$#" -ne "3" ]; then
+			printUsage
+			exit
+		fi
+		if [ ! -f bin/server.o ]; then
+			echo "Can't locate server binary. Perhaps you should make first"
+			exit
+		fi
+		#bin/server.o -w$1 -h$2 -s3 > /dev/null 2>&1 &
+		bin/server.o -w$2 -h$3 -s3 2> /dev/null &
+		;;
+	test)
+		if [ ! -f bin/sample.o ]; then
+			echo "Can't locate server binary. Perhaps you should make first"
+			exit
+		fi
+		bin/sample.o
+		;;
+	*)
+		printUsage
+esac

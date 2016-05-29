@@ -215,9 +215,17 @@ int main(int argc, char *argv[])
 		switch(opt) {
 		case 'w': 
 			glcd_width = atoi(optarg);
+			if (glcd_width < 10) {
+				printf("GLEM: Width %d pix not supported\n", glcd_width);
+				exit (1);
+			}
 			break;
 		case 'h':
 			glcd_height = atoi(optarg);
+			if (glcd_height < 10) {
+				printf("GLEM: height %d pix not supported\n", glcd_height);
+				exit (1);
+			}
 			break;
 		case 's':
 			scale_factor = atoi(optarg);
