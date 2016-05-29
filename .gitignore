@@ -1,5 +1,4 @@
-glem.x
-client
+bin/
 
 # Object files
 *.o
