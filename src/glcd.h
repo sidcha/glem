@@ -26,16 +26,10 @@
 
 #define ROW_MAJOR
 
-#ifndef GLCD_WIDTH
-#define GLCD_WIDTH	(128)
-#endif
-#ifndef GLCD_HEIGHT
-#define GLCD_HEIGHT	(64)
-#endif
-
-void glcdSetPixel(int x, int y, int color);
-void glcdClear();
-void glcdRefresh();
+void glcd_init();
+void glcd_set_pixel(int x, int y, int color);
+void glcd_clear();
+void glcd_refresh();
 
 #endif
 

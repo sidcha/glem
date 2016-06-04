@@ -2,28 +2,29 @@
 
 printUsage() {
 	echo "Usage: $0 serve <width> <height>"
-	echo "Usage: $0 test"
+	echo "Usage: $0 test <width> <height>"
 }
+
+if [ "$#" -ne "3" ]; then
+	printUsage
+	exit
+fi
 
 case "$1" in
 	serve)
-		if [ "$#" -ne "3" ]; then
-			printUsage
+		if [ ! -f bin/glem.elf ]; then
+			echo "Can't locate server's binary. Perhaps you should make first"
 			exit
 		fi
-		if [ ! -f bin/server.o ]; then
-			echo "Can't locate server binary. Perhaps you should make first"
-			exit
-		fi
-		#bin/server.o -w$1 -h$2 -s3 > /dev/null 2>&1 &
-		bin/server.o -w$2 -h$3 -s3 2> /dev/null &
+		#./bin/glem.elf -w$2 -h$3 -s3  #  Debug
+		./bin/glem.elf -w$2 -h$3 -s3 > /dev/null 2>&1 &
 		;;
 	test)
-		if [ ! -f bin/sample.o ]; then
-			echo "Can't locate server binary. Perhaps you should make first"
+		if [ ! -f bin/sample.elf ]; then
+			echo "Can't locate sample's binary. Perhaps you should make first"
 			exit
 		fi
-		bin/sample.o
+		./bin/sample.elf $1 $2
 		;;
 	*)
 		printUsage

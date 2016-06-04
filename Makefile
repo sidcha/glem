@@ -1,24 +1,28 @@
-CC = gcc
-MKDIR = mkdir
-OBJDIR = bin
+CC       := gcc
 CC_FLAGS := -Wall -O3 -g3
-#CC_FLAGS := -fstack-protector-strong
+LIBS     := -lGL -lGLU -lglut
 
-LIBS := -lGL -lGLU -lglut
+GLEM_OBJ := obj/server.o
+SAMPLE_OBJ := obj/example.o obj/glcd.o
 
-all: glem sample
+all: dirs glem sample
 
-glem: bindir
-	$(CC) $(CC_FLAGS) server.c $(LIBS) -o $(OBJDIR)/server.o
+obj/%.o: src/%.c
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" -c "$<"
 
-bindir:
-	$(MKDIR) -p $(OBJDIR)
+glem: $(GLEM_OBJ)
+	@$(CC) $(CC_FLAGS) -o bin/$@.elf $^ $(LIBS)
 
-sample:
-	@cd sample/ && make
-	@mv sample/*.o $(OBJDIR)/
+sample: $(SAMPLE_OBJ)
+	@$(CC) $(CC_FLAGS) -o bin/$@.elf $^ $(LIBS)
 
-.PHONY: clean client glem sample
+dirs:
+	@mkdir -p bin
+	@mkdir -p obj
+
 clean:
-	@cd sample && make clean
-	@rm -rf bin/
+	@rm -rf bin/* obj/*
+
+.PHONY: clean glem sample
+

@@ -32,69 +32,82 @@
 
 #include "glcd.h"
 
-#define GLCD_BUFLEN	(GLCD_WIDTH/8*GLCD_HEIGHT)
-
 #if defined (COL_MAJOR)
-#define setPix(x, y)   glcdBuf[ ( (y>>3) * GLCD_WIDTH ) + x ] |=  (1<<(y&0x07))
-#define clearPix(x, y) glcdBuf[ ( (y>>3) * GLCD_WIDTH ) + x ] &= ~(1<<(y&0x07))
+#define set_pix(x, y)   glcd_buf [ ( (y>>3) * glcd_width ) + x ] |=  (1<<(y&0x07))
+#define clear_pix(x, y) glcd_buf [ ( (y>>3) * glcd_width ) + x ] &= ~(1<<(y&0x07))
 #elif defined (ROW_MAJOR)
-#define setPix(x, y)   glcdBuf[y * (GLCD_WIDTH >> 3) + (x >> 3)] |=  (0x0080 >> (x&0x0007))
-#define clearPix(x, y) glcdBuf[y * (GLCD_WIDTH >> 3) + (x >> 3)] &= ~(0x0080 >> (x&0x0007))
+#define set_pix(x, y)   glcd_buf [y * (glcd_width >> 3) + (x >> 3)] |=  (0x0080 >> (x&0x0007))
+#define clear_pix(x, y) glcd_buf [y * (glcd_width >> 3) + (x >> 3)] &= ~(0x0080 >> (x&0x0007))
 #endif
 
-uint8_t glcdBuf[GLCD_BUFLEN];
+int glcd_width;
+int glcd_height;
+uint8_t *glcd_buf;
 
-void glemServerSend(uint8_t *buf, int len)
+void glem_server_send(uint8_t *buf, int len)
 {
-	int glemFD;
+	int glem_fd;
 	char path[64];
-	socklen_t sockLen;
-	struct sockaddr_un servAddr;
+	socklen_t sock_len;
+	struct sockaddr_un serv_addr;
 
-	if ((glemFD = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+	if ((glem_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		perror("GLEM: Failed at socket");
 		return;
 	}
 
-	servAddr.sun_family = AF_UNIX;
-	snprintf(path, 64, "/tmp/glcdSocket%dx%d", GLCD_WIDTH, GLCD_HEIGHT);
+	serv_addr.sun_family = AF_UNIX;
+	snprintf(path, 64, "/tmp/glcdSocket%dx%d", glcd_width, glcd_height);
 	path[63] = 0;
-	strcpy(servAddr.sun_path, path);
+	strcpy(serv_addr.sun_path, path);
 
-	sockLen = sizeof(servAddr.sun_family) + strlen(servAddr.sun_path);
+	sock_len = sizeof(serv_addr.sun_family) + strlen(serv_addr.sun_path);
 
-	if (connect(glemFD, (const struct sockaddr *)&servAddr, sockLen) != 0) {
+	if (connect(glem_fd, (const struct sockaddr *)&serv_addr, sock_len) != 0) {
 		perror("GLEM: Failed at connect");
+		printf("Attempt to connect to %s\n", path);
 		return;
 	}
 
-	int ret = write(glemFD, buf, len);
+	int ret = write(glem_fd, buf, len);
 	if (ret <= 0) {
  		perror("GLEM: Failed at write");
 	}
-	close(glemFD);
+	close(glem_fd);
 }
 
-void glcdSetPixel(int x, int y, int color)
+void glcd_init(int width, int height)
 {
-	if (x < 0 || x >= GLCD_WIDTH)
+	glcd_width = width;
+	glcd_height = height;
+
+	glcd_buf = malloc (sizeof(uint8_t) * glcd_width/8 * glcd_height);
+	if (glcd_buf == NULL) {
+		printf("[ ! ] Error: glcd buffer alloc failed!\n");
+		exit(-1);
+	}
+}
+
+void glcd_set_pixel(int x, int y, int color)
+{
+	if (x < 0 || x >= glcd_width)
 		return;
-	if (y < 0 || y >= GLCD_HEIGHT)
+	if (y < 0 || y >= glcd_height)
 		return;
 
 	if (color)
-		setPix(x, y);
+		set_pix(x, y);
 	else
-		clearPix(x, y); 
+		clear_pix(x, y); 
 }
 
-void glcdClear()
+void glcd_clear()
 {
-	memset(glcdBuf, 0x00, GLCD_BUFLEN);
-	glemServerSend(glcdBuf, GLCD_BUFLEN);
+	memset(glcd_buf, 0x00, glcd_width/8*glcd_height);
+	glem_server_send(glcd_buf, glcd_width/8*glcd_height);
 }
 
-void glcdRefresh()
+void glcd_refresh()
 {
-	glemServerSend(glcdBuf, GLCD_BUFLEN);
+	glem_server_send(glcd_buf, glcd_width/8*glcd_height);
 }

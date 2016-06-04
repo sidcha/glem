@@ -22,15 +22,25 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "glcd.h"
 
 int main(int argc, char *argv[])
 {
 	int i, j;
-	for (i=0, j=0; i<GLCD_WIDTH && j<GLCD_HEIGHT; i++, j++)
-		glcdSetPixel(i, j, 1);
-
-	glcdRefresh();
+	if (argc != 3) {
+		printf("Usage: %s <width> <height>\n", argv[0]);
+		exit(-1);
+	}
+	int width = atoi(argv[1]);
+	int height = atoi(argv[2]);
+	glcd_init(width, height);
+	for (i=0, j=0; i<width && j<height; i++, j++) {
+		// TODO elaborate this!
+		glcd_set_pixel(i, j, 1);
+	}
+	glcd_refresh();
 	return 0;
 }
 
