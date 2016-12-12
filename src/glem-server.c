@@ -15,10 +15,10 @@
  **************************************************************************/
 
 /*
- *        File: glem/main.c
+ *        File: glem/src/glem-server.c
  *  Created on: 07-May-2016
  *      Author: Siddharth Chandrasekaran
- *        Mail: siddharth3141@gmail.com
+ *        Mail: siddharth@embedjournal.com
  */
 
 #include <stdio.h>
@@ -41,7 +41,7 @@
 // Unix socket location
 #define ADDRESS			"/tmp/glcdSocket"
 #define GLEM_VER_MAJ 0
-#define GLEM_VER_MIN 2
+#define GLEM_VER_MIN 3
 #define glcd_get_pixel(a,x,y) (a[y * (glcd_width / 8) + (x / 8)] & (1 << (7 - x % 8)));
 #define convert_local_to_glut(x,y) do { x = window_origin_x + (x * scale_factor); \
 	y = window_origin_y + (y * scale_factor); } while(0)
@@ -202,15 +202,16 @@ void glem_sigchld_handler(int sigNum)
 
 void print_usage()
 {
-	printf("Usage: glem -w GLCD_WIDTH -h GLCD_HEIGHT -s SCALE_FACTOR\n");
+	printf("Usage: glem -w GLCD_WIDTH -h GLCD_HEIGHT [-s SCALE_FACTOR]\n");
 }
 
 int main(int argc, char *argv[])
 {
-	int opt, glcd_buf_len;
+	int glcd_buf_len;
 	char path[64];
 	uint8_t *tmp_read_buf;
 	signal(SIGCHLD, glem_sigchld_handler);
+	int opt, got_width=0, got_height=0, got_sf=0;
 	while ((opt = getopt(argc, argv, "w:h:s:")) != -1) {
 		switch(opt) {
 		case 'w': 
@@ -219,6 +220,7 @@ int main(int argc, char *argv[])
 				printf("GLEM: Width %d pix not supported\n", glcd_width);
 				exit (1);
 			}
+			got_width = 1;
 			break;
 		case 'h':
 			glcd_height = atoi(optarg);
@@ -226,15 +228,27 @@ int main(int argc, char *argv[])
 				printf("GLEM: height %d pix not supported\n", glcd_height);
 				exit (1);
 			}
+			got_height = 1;
 			break;
 		case 's':
 			scale_factor = atoi(optarg);
+			got_sf = 1;
 			break;
 		default:// '?'
 			printf("Invalid arguement!\n");
 			print_usage();
 			exit(-1);
 		}
+	}
+	if (!got_height || !got_width) {
+		// Can assume defaults here, but both these are
+		// critical data. Hence mandated.
+		printf("Must provide width and height!\n");
+		exit(-1);
+	}
+	if (!got_sf) {
+		// assign default value if not supplied.
+		scale_factor = 2;
 	}
 	gl_width = glcd_width * scale_factor + GL_PAD;
 	gl_height = glcd_height * scale_factor + GL_PAD;

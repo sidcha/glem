@@ -15,21 +15,31 @@
  **************************************************************************/
 
 /*
- *        File: glem/sample/glcd.h
+ *        File: glem/src/glcd.h
  *  Created on: 07-May-2016
  *      Author: Siddharth Chandrasekaran
- *        Mail: siddharth3141@gmail.com
+ *        Mail: siddharth@embedjournal.com
  */
 
-#ifndef GLEM_H_
-#define GLEM_H_
 
-#define ROW_MAJOR
+#ifndef _GLCD_H_
+#define _GLCD_H_
 
-void glcd_init();
+#include "objects.h"
+
+#define GLCD_ROW_MAJOR 0x00
+#define GLCD_COL_MAJOR 0x01
+
+void glcd_init(int width, int height, int flags);
 void glcd_set_pixel(int x, int y, int color);
 void glcd_clear();
 void glcd_refresh();
+
+int draw_char(const font_t *f, int c, int x, int y);
+int draw_string(const font_t *f, const char *s, int x, int y);
+int draw_symbol(const symbol_t *s, int x, int y);
+void probe_string(const font_t *f, const char *s, int *w, int *h);
+void probe_symbol(const symbol_t *s, int *w, int *h);
 
 #endif
 

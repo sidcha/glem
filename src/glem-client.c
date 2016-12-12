@@ -15,31 +15,34 @@
  **************************************************************************/
 
 /*
- *        File: glem/sample/main.c
+ *        File: glem/src/glem-client.c
  *  Created on: 07-May-2016
  *      Author: Siddharth Chandrasekaran
- *        Mail: siddharth3141@gmail.com
+ *        Mail: siddharth@embedjournal.com
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "symbols.h"
+#include "fonts.h"
+#include "objects.h"
 #include "glcd.h"
 
 int main(int argc, char *argv[])
 {
-	int i, j;
+	int i, j, w, h, lw, lh;
 	if (argc != 3) {
 		printf("Usage: %s <width> <height>\n", argv[0]);
 		exit(-1);
 	}
-	int width = atoi(argv[1]);
-	int height = atoi(argv[2]);
-	glcd_init(width, height);
-	for (i=0, j=0; i<width && j<height; i++, j++) {
-		// TODO elaborate this!
-		glcd_set_pixel(i, j, 1);
-	}
+	w = atoi(argv[1]);
+	h = atoi(argv[2]);
+	glcd_init(w, h, GLCD_ROW_MAJOR);
+
+	probe_symbol(&glem_logo, &lw, &lh);
+	draw_symbol(&glem_logo, (w-lw)/2, (h-lh)/2);
+
 	glcd_refresh();
 	return 0;
 }

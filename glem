@@ -24,7 +24,7 @@ case "$1" in
 			echo "Can't locate sample's binary. Perhaps you should make first"
 			exit
 		fi
-		./bin/sample.elf $1 $2
+		./bin/sample.elf $2 $3
 		;;
 	*)
 		printUsage
