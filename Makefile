@@ -23,30 +23,32 @@
 #
 
 CC       := gcc
-CC_FLAGS := -Wall -O3 -g3
+CC_FLAGS := -Wall -O3
 LIBS     := -lGL -lGLU -lglut
 
-GLEM_OBJ := obj/glem-server.o
-SAMPLE_OBJ := obj/glem-client.o obj/glcd.o obj/fonts.o obj/symbols.o
+SAMPLE_OBJ := 
 
-all: dirs glem sample
+all: dirs glem
+
+glem: obj/glem.o obj/glcd.o obj/fonts.o obj/symbols.o
+	@$(CC) $(CC_FLAGS) -o $@ $^ $(LIBS)
+
+install: glem
+	mkdir -p /usr/local/bin
+	install -m 755 glem /usr/local/bin
+
+uninstall:
+	@rm -rf /usr/local/bin/glem
 
 obj/%.o: src/%.c
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" -c "$<"
-
-glem: $(GLEM_OBJ)
-	@$(CC) $(CC_FLAGS) -o bin/$@.elf $^ $(LIBS)
-
-sample: $(SAMPLE_OBJ)
-	@$(CC) $(CC_FLAGS) -o bin/$@.elf $^ $(LIBS)
+	@$(CC) $(CFLAGS) -o "$@" -c "$<"
 
 dirs:
-	@mkdir -p bin
 	@mkdir -p obj
 
 clean:
-	@rm -rf bin/* obj/*
+	@rm -rf obj glem
 
-.PHONY: clean glem sample
+.PHONY: clean glem glem-test
 
