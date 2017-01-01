@@ -16,52 +16,23 @@
 ############################################################################
 
 #
-#
-#        File: glem/src/glcd.c
-#  Created on: 07-May-2016
+#  Created on: 01-Jan-2017
 #      Author: Siddharth Chandrasekaran
 #        Mail: siddharth@embedjournal.com
 #
 
-CC       := gcc
-CC_FLAGS := -Wall -O3 -Iinc -Llib
-LIBS     := -lGL -lGLU -lglut
-INST_PATH:= /usr/local
-ELF      := glem
+example: glcd.o fonts.o symbols.o main.o
+	@gcc -Wall -O3 -o $@ $^ -lglem -L../lib
 
-all: dirs glem glem-dev
-
-glem: obj/glem.o
-	@$(CC) $(CC_FLAGS) -o $@ $^ $(LIBS) -lglem
-
-glem-dev: obj/glem-dev.o
-	@ar rcs lib/libglem.a obj/glem-dev.o
-
-install: glem
-	@mkdir -p ${INST_PATH}/bin
-	@mkdir -p ${INST_PATH}/include
-	@mkdir -p ${INST_PATH}/lib
-	@mkdir -p ${INST_PATH}/share/man/man1
-	@install -m 755 ${ELF} ${INST_PATH}/bin
-	@cp lib/libglem.a ${INST_PATH}/lib
-	@cp inc/glem.h ${INST_PATH}/include
-	@cp doc/glem.1 ${INST_PATH}/share/man/man1/
-
-uninstall:
-	@rm -rf ${INST_PATH}/bin/${ELF}
-	@rm -rf ${INST_PATH}/lib/libglem.a
-	@rm -rf ${INST_PATH}/include/glem.h
-	@rm -rf ${INST_PATH}/share/man/man1/glem.1
-
-obj/%.o: src/%.c
+%.o: %.c
 	@echo "Compiling $<"
-	@$(CC) $(CC_FLAGS) -o "$@" -c "$<"
+	@gcc -Wall -O3 -o $@ -c $< -I../inc
 
 dirs:
 	@mkdir -p obj lib inc
 
 clean:
-	@rm -rf obj/* lib/* glem
+	@rm -rf example *.o
 
-.PHONY: clean glem dirs install uninstall
+.PHONY: clean dirs example
 

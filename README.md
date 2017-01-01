@@ -47,7 +47,6 @@ In both cases, typical application layer code has an array to store the bit map
 value. The length of the array would be,
 ```
 buf_len = glcd_width/8 * glcd_height;
-
 ```
 This buffer is what your embedded device writes out to the GCLD through the
 SPI/I2C bus. The glem server expects to receive this buffer to render the image.
@@ -75,5 +74,7 @@ Have a look at src/main.c to get and idea on how to use it in your project.
 ### Bugs and Patches.
 
 The git upstream for this project is hosted at http://github.com/cbsiddharth/glem.git
-You can report bugs to siddharth3141@gmail.com. Patches are welcome.
+You can report bugs to siddharth@embedjournal.com.
+
+Patches are welcome.
 

@@ -30,6 +30,8 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 
+#include <glem.h>
+
 #include "glcd.h"
 #include "objects.h"
 
@@ -42,35 +44,6 @@ int glcd_width;
 int glcd_height;
 int glcd_flags;
 uint8_t *glcd_buf;
-
-void glem_server_send(uint8_t *buf, int len)
-{
-	int glem_fd;
-	char path[64];
-	socklen_t sock_len;
-	struct sockaddr_un serv_addr;
-
-	if ((glem_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		perror("GLEM: Failed at socket");
-		return;
-	}
-
-	serv_addr.sun_family = AF_UNIX;
-	snprintf(path, 64, "/tmp/glcdSocket%dx%d", glcd_width, glcd_height);
-	path[63] = 0;
-	strcpy(serv_addr.sun_path, path);
-
-	sock_len = sizeof(serv_addr.sun_family) + strlen(serv_addr.sun_path);
-
-	if (connect(glem_fd, (const struct sockaddr *)&serv_addr, sock_len) == 0) {
-		//perror("GLEM: Failed at connect");
-		//printf("Attempt to connect to %s\n", path);
-		int ret = write(glem_fd, buf, len);
-		if (ret <= 0)
-			perror("GLEM: Failed at write");
-	}
-	close(glem_fd);
-}
 
 void glcd_clear()
 {
@@ -93,6 +66,7 @@ void glcd_init(int width, int height, int flags)
 		printf("[ ! ] Error: glcd buffer alloc failed!\n");
 		exit(-1);
 	}
+	glem_init(width, height, flags);
 }
 
 void glcd_set_pixel(int x, int y, int color)

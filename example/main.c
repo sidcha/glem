@@ -31,7 +31,7 @@
 
 int main(int argc, char *argv[])
 {
-	int i, j, w, h, lw, lh;
+	int w, h, lw, lh;
 	if (argc != 3) {
 		printf("Usage: %s <width> <height>\n", argv[0]);
 		exit(-1);

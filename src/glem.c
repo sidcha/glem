@@ -38,11 +38,7 @@
 
 #include <GL/glut.h>
 #include <GL/gl.h>
-
-#include "symbols.h"
-#include "fonts.h"
-#include "objects.h"
-#include "glcd.h"
+#include <glem.h>
 
 // Unix socket location
 #define ADDRESS			"/tmp/glcdSocket"
@@ -57,7 +53,7 @@
 pid_t gl_pid;
 uint8_t *glcd_frame;
 uint8_t *glut_buf;
-int server_sock_fd;
+int server_sock;
 int glcd_width;
 int glcd_height;
 int scale_factor;
@@ -83,15 +79,22 @@ void die_error(const char *note)
 
 void die_usage()
 {
-	printf( "\nGraphical LCD EMulator (GLEM v%d.%d)\n"
-		"Tiny grapical LCD emulator for embedded devices\n\n"
-		"Usage: glem [OPTIONS]\n"
+	printf( "\n"
+		"Graphical LCD EMulator (GLEM v%d.%d)\n"
+		"Tiny grapical LCD emulator for embedded platorms and other small projects that\n"
+		"need a one-off GUI to display some data without having to write too much code.\n"
+		"\n"
+		"USAGE\n"
+			"\tglem <-r RESOLUTION> [OPTIONS]\n"
 		"OPTIONS\n"
 			"\t-r RESOLUTION    -\t Resolution of GLCD WIDTHxHEIGHT (eg. 128x64)\n"
-			"\t-h HEIGHT        -\t Height of GLCD\n"
-			"\t-s SCALE_FACTOR  -\t Pixel scale ratio. Default 1:2\n"
+			"\t-s SCALE_FACTOR  -\t Pixel scale ratio. Default 1:2 (-s2)\n"
+			"\t-t TEST_VAL      -\t Send some data to glem server to check connection\n"
 			"\t-v VERBOSE       -\t Don't go into bacground\n"
 			"\t-h HELP          -\t Display this help message\n"
+		"EXAMPLE\n"
+			"\t$ glem -r 128x64 -s3     # to start server\n"
+			"\t$ glem -r 128x64 -t87    # to test a running server (draw vertical lines)\n"
 		"\n", GLEM_VER_MAJ, GLEM_VER_MAJ
 	);
 	exit(-1);
@@ -175,8 +178,8 @@ void draw_rect_thick(int x, int y, int w, int h, int tx, int ty, int color)
 
 void glut_pdeathsig_handler(int sigNum)
 {
-	shutdown(server_sock_fd, SHUT_RDWR);
-	close(server_sock_fd);
+	shutdown(server_sock, SHUT_RDWR);
+	close(server_sock);
 	unlink(ADDRESS);
 	exit(0);
 }
@@ -185,9 +188,9 @@ void glut_init(int *argc, char **argv)
 {
 	char win_name[64];
 	gl_pid = fork();
-	if (gl_pid == (pid_t)(-1))
+	if (gl_pid == (pid_t)(-1)) {
 		die_error("Fork at glut_init");
-
+	}
 	if (gl_pid != 0) {
 		// parent process.
 		return;
@@ -239,41 +242,39 @@ void glem_sigchld_handler(int sigNum)
 
 int glem_background()
 {
-	pid_t pid, sid;
-	
+	pid_t pid;
 	if((pid = fork()) < 0) {
-		printf("Error going into the background.\n");
-		printf("fork: %s\n", strerror(errno));
-		return(-1);
+		die_error("fork: Error going into the background");
 	}
-	
-	/* Is this the parent process? If so, end it. */
-	if(pid > 0) exit(0);
-	
-	umask(0);
-	
-	/* Create a new SID for the child process. */
-	sid = setsid();
-	if(sid < 0) {
-		printf("Error going into the background.\n");
-		printf("setsid: %s\n", strerror(errno));
-		return(-1);
+	if(pid > 0) { // Is this the parent process? If so, end it.
+		exit(0);
 	}
-	
+
+	umask(0); // Mark this precess file creation mask to 0.
+
+	if(setsid() < 0) { // Mark this child as session leader.
+		die_error("setid: Error going into the background");
+	}
+
+	// Close all 3 file desc to prevent any output to terminal.
 	close(STDIN_FILENO);
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
-	
+
 	return(0);
 }
 
-void glem_test()
+void glem_test(int val)
 {
-	int w, h;
-	glcd_init(glcd_width, glcd_height, GLCD_ROW_MAJOR);
-	probe_symbol(&glem_logo, &w, &h);
-	draw_symbol(&glem_logo, (glcd_width-w)/2, (glcd_height-h)/2);
-	glcd_refresh();
+	int size = glcd_width/8*glcd_height;
+	uint8_t *data = (uint8_t *)malloc(size);
+	if (data == NULL) {
+		printf("glem: test out of memory!\n");
+		return;
+	}
+	memset(data, val, size);
+	glem_init(glcd_width, glcd_height, 0);
+	glem_server_send(data, size);
 }
 
 int main(int argc, char *argv[])
@@ -282,27 +283,31 @@ int main(int argc, char *argv[])
 	char path[64];
 	uint8_t *tmp_read_buf;
 	signal(SIGCHLD, glem_sigchld_handler);
-	int opt, got_resolution=0, got_verbose=0, got_test=0;
+	int opt, got_resolution=0, got_verbose=0, got_test=0, test_val=0;
 	scale_factor = 2;
-	while ((opt = getopt(argc, argv, "tvhr:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "vhr:s:t:")) != -1) {
 		switch(opt) {
 		case 'r':
-			if (sscanf(optarg, "%dx%d", &glcd_width, &glcd_height) < 2)
+			if (sscanf(optarg, "%dx%d", &glcd_width, &glcd_height) < 2) {
 				die_usage();
-			if (glcd_width < 10 || glcd_height < 10)
+			}
+			if (glcd_width < 10 || glcd_height < 10) {
 				die("Unsupported resolution. Must be greater than 10x10");
+			}
 			got_resolution = 1;
 			break;
 		case 's':
 			scale_factor = atoi(optarg);
-			if (scale_factor == 0)
+			if (scale_factor == 0) {
 				die_usage();
+			}
 			break;
 		case 'v':
 			got_verbose = 1;
 			break;
 		case 't':
 			got_test = 1;
+			test_val = atoi(optarg);
 			break;
 		case 'h':
 		default:// '?'
@@ -310,12 +315,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!got_resolution)		// Can't assume defaults here. Both these
+	if (!got_resolution) {		// Can't assume defaults here. Both these
 		die_usage();		// are critical data. Hence mandated.
-	if (!got_verbose)
+	}
+	if (!got_verbose) {
 		glem_background();
+	}
 	if (got_test) {
-		glem_test();
+		// Send one off commands to an already running glem server for for
+		// the given resolution. If a server is not running, glem_test will
+		// fail with an error.
+		glem_test(test_val);
 		exit(0);
 	}
 
@@ -327,18 +337,18 @@ int main(int argc, char *argv[])
 
 	glcd_frame = mmap(NULL, sizeof(uint8_t)*glcd_buf_len,
 		PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (glcd_frame == NULL)
+	if (glcd_frame == NULL) {
 		die("Shared memory alloc failed!");
-
+	}
 	tmp_read_buf = malloc(sizeof(uint8_t)*glcd_buf_len);
-	if (tmp_read_buf == NULL)
-		die("Shared memory alloc failed!");
-
+	if (tmp_read_buf == NULL) {
+		die("Memory alloc failed!");
+	}
 	glut_init(&argc, argv);		// may modify argc and argv.
 
-	if ((server_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+	if ((server_sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		die(strerror(errno));
-
+	}
 	struct sockaddr_un sock_serv;
 	sock_serv.sun_family = AF_UNIX;
 	snprintf(path, 64, "%s%dx%d", ADDRESS, glcd_width, glcd_height);
@@ -347,32 +357,36 @@ int main(int argc, char *argv[])
 
 	socklen_t sock_len = sizeof(sock_serv.sun_family) + strlen(sock_serv.sun_path);
 
-	if (bind(server_sock_fd, (const struct sockaddr *)&sock_serv, sock_len) < 0)
+	if (bind(server_sock, (const struct sockaddr *)&sock_serv, sock_len) < 0) {
 		die_error("Error Bind");
-
-	if (listen(server_sock_fd, 5) < 0)
+	}
+	if (listen(server_sock, 5) < 0) {
 		die_error("Error Listen");
-
+	}
 	while (1) {
 		int client_fd, rec;
-		struct sockaddr_un client_sock;
-		socklen_t client_len = sizeof(client_sock);
-		if ((client_fd = accept(server_sock_fd, 
-				(struct sockaddr *)&client_sock, &client_len)) < 0) {
-			die_error ("Error at accpet");
+		struct sockaddr_un sock;
+		socklen_t clen = sizeof(sock);
+		client_fd = accept(server_sock, (struct sockaddr *)&sock, &clen);
+		if (client_fd < 0) {
+			perror("glem: failed at accpet");
+			continue;
 		}
-		if ((rec = read(client_fd, tmp_read_buf, glcd_buf_len)) < 0)
-			die_error ("Error reading from socket");
-
-		// Race condition: The consumer theread may have been
-		// reading when we call memcpy here causing tear. But
-		// we can live with it.
-		memcpy(glcd_frame, tmp_read_buf, glcd_buf_len);
+		if ((rec = read(client_fd, tmp_read_buf, glcd_buf_len)) > 0) {
+			printf("glem: receieved %d bytes from client\n", rec);
+			// Race condition: The consumer theread may have been
+			// reading when we call memcpy here causing tear. But
+			// we can live with it.
+			memcpy(glcd_frame, tmp_read_buf, rec);
+		} else {
+			// Read failed ??
+			perror("glem: read failed");
+		}
 		close(client_fd);
 	}
 	// close left here for sytactic sugar.
 	// the socket is closed in signal handler on exit.
-	close(server_sock_fd);
+	close(server_sock);
 	return 0;
 }
 
