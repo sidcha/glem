@@ -81,7 +81,7 @@ void die_usage()
 {
 	printf( "\n"
 		"Graphical LCD EMulator (GLEM v%d.%d)\n"
-		"Tiny grapical LCD emulator for embedded platorms and other small projects that\n"
+		"Tiny graphical LCD emulator for embedded platforms and other small projects that\n"
 		"need a one-off GUI to display some data without having to write too much code.\n"
 		"\n"
 		"USAGE\n"
