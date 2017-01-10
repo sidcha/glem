@@ -29,13 +29,13 @@ LIBS     := -lGL -lGLU -lglut
 INST_PATH:= /usr/local
 ELF      := glem
 
-all: dirs glem glem-dev
+all: dirs libglem glem 
 
-glem: obj/glem.o
+glem: obj/glem.o obj/passfd.o
 	@$(CC) $(CC_FLAGS) -o $@ $^ $(LIBS) -lglem
 
-glem-dev: obj/glem-dev.o
-	@ar rcs lib/libglem.a obj/glem-dev.o
+libglem: obj/libglem.o
+	@ar rcs lib/libglem.a obj/libglem.o
 
 install: glem
 	@mkdir -p ${INST_PATH}/bin

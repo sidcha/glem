@@ -66,7 +66,14 @@ void glcd_init(int width, int height, int flags)
 		printf("[ ! ] Error: glcd buffer alloc failed!\n");
 		exit(-1);
 	}
+	printf("glem init..\n");
 	glem_init(width, height, flags);
+	printf("glem init done\n");
+}
+
+void glcd_set_pixel_direct(int x, int y, int color)
+{
+	glem_set_pixel(x, y, color);
 }
 
 void glcd_set_pixel(int x, int y, int color)

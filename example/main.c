@@ -36,13 +36,16 @@ int main(int argc, char *argv[])
 		printf("Usage: %s <width> <height>\n", argv[0]);
 		exit(-1);
 	}
+	printf("start\n");
 	w = atoi(argv[1]);
 	h = atoi(argv[2]);
+	printf("glcd init\n");
 	glcd_init(w, h, GLCD_ROW_MAJOR);
+	printf("glcd init done\n");
 
 	probe_symbol(&glem_logo, &lw, &lh);
 	draw_symbol(&glem_logo, (w-lw)/2, (h-lh)/2);
-
+	glcd_set_pixel_direct(2,2, 1);
 	glcd_refresh();
 	return 0;
 }

@@ -28,9 +28,6 @@ example: glcd.o fonts.o symbols.o main.o
 	@echo "Compiling $<"
 	@gcc -Wall -O3 -o $@ -c $< -I../inc
 
-dirs:
-	@mkdir -p obj lib inc
-
 clean:
 	@rm -rf example *.o
 

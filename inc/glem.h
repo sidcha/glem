@@ -30,6 +30,7 @@
 
 void glem_init(int glcd_width, int glcd_height, int flags);
 void glem_server_send(uint8_t *buf, int len);
+void glem_set_pixel(int x, int y, int color);
 
 #endif
 

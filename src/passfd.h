@@ -1,7 +1,7 @@
 /***************************************************************************
  * This program is free software: you can redistribute it and/or modify    *
  * it under the terms of the GNU General Public License as published by    *
- * the Free Software Foundation, either version 3 of the License, or       *
+ * the Free Software Foundation, either version 2 of the License, or       *
  * (at your option) any later version.                                     *
  *                                                                         *
  * This program is distributed in the hope that it will be useful,         *
@@ -15,32 +15,16 @@
  **************************************************************************/
 
 /*
- *        File: glem/src/glcd.h
- *  Created on: 07-May-2016
+ *        File: glem/src/passfd.h
+ *  Created on: 04-Jan-2017
  *      Author: Siddharth Chandrasekaran
  *        Mail: siddharth@embedjournal.com
  */
 
+#ifndef PASSFD_H_
+#define PASSFD_H_
 
-#ifndef _GLCD_H_
-#define _GLCD_H_
+int sendfd(int sock_fd, int send_me_fd);
+int recvfd(int sock_fd, int *rec_sock_fd);
 
-#include "objects.h"
-
-#define GLCD_ROW_MAJOR 0x00
-#define GLCD_COL_MAJOR 0x01
-
-void glcd_init(int width, int height, int flags);
-void glcd_set_pixel(int x, int y, int color);
-void glcd_set_pixel_direct(int x, int y, int color);
-void glcd_clear();
-void glcd_refresh();
-
-int draw_char(const font_t *f, int c, int x, int y);
-int draw_string(const font_t *f, const char *s, int x, int y);
-int draw_symbol(const symbol_t *s, int x, int y);
-void probe_string(const font_t *f, const char *s, int *w, int *h);
-void probe_symbol(const symbol_t *s, int *w, int *h);
-
-#endif
-
+#endif /* PASSDF_H_ */

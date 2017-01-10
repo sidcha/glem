@@ -15,32 +15,41 @@
  **************************************************************************/
 
 /*
- *        File: glem/src/glcd.h
- *  Created on: 07-May-2016
+ *        File: glem/src/private.h
+ *  Created on: 2-Jan-2017
  *      Author: Siddharth Chandrasekaran
  *        Mail: siddharth@embedjournal.com
  */
 
 
-#ifndef _GLCD_H_
-#define _GLCD_H_
+#ifndef _PRIVATE_H_
+#define _PRIVATE_H_
 
-#include "objects.h"
+enum glem_command_e {
+	GLEM_CMD_SET_PIX,
+	GLEM_CMD_SEND_FRAME,
+	GLEM_CMD_CLEAR_SCREEN,
+	GLEM_CMD_SENTINEL
+};
 
-#define GLCD_ROW_MAJOR 0x00
-#define GLCD_COL_MAJOR 0x01
+typedef struct {
+	enum glem_command_e cmd_num;
+	int data_len;
+	uint8_t data[];
+} glem_command_t;
 
-void glcd_init(int width, int height, int flags);
-void glcd_set_pixel(int x, int y, int color);
-void glcd_set_pixel_direct(int x, int y, int color);
-void glcd_clear();
-void glcd_refresh();
+struct glem_cmd_frame {
+	int res_x;
+	int res_y;
+	int buf_len;
+	uint8_t buf[];
+};
 
-int draw_char(const font_t *f, int c, int x, int y);
-int draw_string(const font_t *f, const char *s, int x, int y);
-int draw_symbol(const symbol_t *s, int x, int y);
-void probe_string(const font_t *f, const char *s, int *w, int *h);
-void probe_symbol(const symbol_t *s, int *w, int *h);
+struct glem_cmd_set_pixel {
+	int pix_x;
+	int pix_y;
+	int pix_color;
+};
 
 #endif
 
