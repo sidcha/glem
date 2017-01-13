@@ -1,0 +1,55 @@
+.\" generated with Ronn/v0.7.3
+.\" http://github.com/rtomayko/ronn/tree/0.7.3
+.
+.TH "LIB\-GLEM" "3" "January 2017" "" ""
+.
+.SH "NAME"
+\fBlib\-glem\fR \- API documentation for glem(1)
+.
+.SH "SYNOPSIS"
+.
+.nf
+
+#include <glem\.h>
+
+void glem_init(int glcd_width, int glcd_height, int flags);
+void glem_write(uint8_t *buf, int len);
+void glem_setpix(int x, int y, int color);
+.
+.fi
+.
+.SH "DESCRIPTION"
+The application software will have to include \fBglem\.h\fR and replace low level SPI/I2C driver calls such as \fBglcd_write\fR or \fBglcd_setpix\fR with the suitable alternatives provided by lib\-glem to communicate with the server\. See glem(1) for more details\.
+.
+.SH "INTERFACE"
+glem provides the following API to communicate with the server\. The server has to be launched before any of the following calls can be made\.
+.
+.TP
+void \fBglem_init\fR(int glcd_width, int glcd_height, int flags);
+Sets up state variables\. Must be called before any other glem calls\.
+.
+.TP
+void \fBglem_write\fR(uint8_t *buf, int len);
+writes the frame buffer pointed to by \fIbuf\fR of lenth \fIlen\fR into the display\. The frame buffer has to be properly encoded (see \fIDATA ENCODING\fR) to get desired output on screen\.
+.
+.TP
+void \fBglem_setpix\fR(int x, int y, int color);
+sets pixel \fI(x,y)\fR with \fIcolor\fR\.
+.
+.SH "DATA ENCODING"
+Most commercially available GLCDs are 1 bit per pixel packed into bytes in two different ways\. 1\. Row Major \- MSB of first byte is pixel (0,0) and LSB is pixel (7,0)\. Second byte represents pixels (8,0) to (15,0) and so on\. 2\. Column Major \- MSB of first byte is pixel (0,0) and LSB is pixel (0,7)\. Second byte represents pixels (1,0) to (1,7) and so on\.
+.
+.P
+In both cases, typical application layer code has an array to store the bit map value\. The length of the array would be, \fBbuf_len = (glcd_width*glcd_height)/8\fR
+.
+.P
+This buffer is what your embedded device writes out to the GLCD through the SPI/I2C bus\. The glem server expects to receive this buffer to render the image\.
+.
+.SH "BUGS"
+Report bugs to \fIsiddharth@embedjournal\.com\fR or Create an issue at https://github\.com/cbsiddharth/glem\.git/
+.
+.SH "AUTHOR"
+Written by Siddharth Chandrasekaran \fIsiddharth@embedjournal\.com\fR\.
+.
+.SH "ALSO SEE"
+glem(1)

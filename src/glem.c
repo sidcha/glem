@@ -35,6 +35,7 @@
 #include <sys/socket.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
+#include <sys/uio.h>
 
 #include <GL/glut.h>
 #include <GL/gl.h>
@@ -61,7 +62,6 @@
 pid_t pipe_parrent;
 uint8_t *glcd_buf;   // Holds the low res bit map.
 volatile int *conn_stat;
-volatile int *glut_init;
 int glcd_width;
 int glcd_height;
 int gl_width;
@@ -74,18 +74,15 @@ int scale_factor;
 void glem_usage()
 {
 	printf( "\n"
-		"Graphical LCD EMulator (GLEM v%d.%d)\n"
-		"Tiny graphical LCD emulator for embedded platforms and other small projects that\n"
-		"need a one-off GUI to display some data without having to write too much code.\n"
+		"glem - Graphical LCD EMulator v%d.%d\n"
 		"\n"
 		"USAGE\n"
 			"\tglem <-r RESOLUTION> [OPTIONS]\n"
 		"OPTIONS\n"
-			"\t-r RESOLUTION    -\t Resolution of GLCD WIDTHxHEIGHT (eg. 128x64)\n"
-			"\t-s SCALE_FACTOR  -\t Pixel scale ratio. Default 1:2 (-s2)\n"
-			"\t-t TEST_VAL      -\t Send some data to glem server to check connection\n"
-			"\t-v VERBOSE       -\t Don't go into bacground\n"
-			"\t-h HELP          -\t Display this help message\n"
+			"\t-r RESOLUTION -\t Resolution of GLCD WIDTHxHEIGHT (eg. 128x64)\n"
+			"\t-s SCALE      -\t Pixel scale ratio. Default 1:2 (-s2)\n"
+			"\t-v VERBOSE    -\t Don't go into bacground\n"
+			"\t-h HELP       -\t Display this help message\n"
 		"EXAMPLE\n"
 			"\t$ glem -r 128x64 -s3     # to start server\n"
 			"\t$ glem -r 128x64 -t87    # to test a running server (draw vertical lines)\n"
@@ -113,8 +110,6 @@ void die_error(const char *note)
 	perror(tmp);
 	exit(1);
 }
-
-/***************** GLUT ******************/
 
 void glut_set_pixel(uint8_t *buf, int x, int y, int color)
 {
@@ -200,8 +195,6 @@ void glut_reshape(int x, int y)
 	glOrtho(0.0, gl_width, 0.0, gl_height, -1.f, 1.f);
 }
 
-/********* End of GLUT ****************/
-
 void glem_pdeath_handler(int signNum)
 {
 	close(pipe_parrent);
@@ -216,7 +209,6 @@ int glem_setpixel(struct glem_cmd_set_pixel *s)
 		return -1;
 
 	if (s->pix_color) {
-		printf("setting pixel %d, %d --- %d\n", s->pix_x, s->pix_y, sizeof(struct glem_cmd_set_pixel));
 		set_pix_rowmaj(s->pix_x, s->pix_y);
 	} else {
 		clear_pix_rowmaj(s->pix_x, s->pix_y);
@@ -319,12 +311,13 @@ void glem_event_data()
 
 void glem_event_loop()
 {
-	static unsigned int rolling_counter = 0;
-	if (rolling_counter & 0x1f) {
-		if (*conn_stat || rolling_counter & 0xFF) {
-			glem_event_data();
-			*conn_stat = 0;
-		}
+	static volatile unsigned int rolling_counter = 0;
+	if ((rolling_counter & 0x1FF) == 0x1FF) {
+		glut_redraw_screen();
+	}
+	if (*conn_stat) {
+		glem_event_data();
+		*conn_stat = 0;
 	}
 	rolling_counter++;
 	usleep(1000);
@@ -351,7 +344,6 @@ void glem_socket_listener(int sock)
 	if (listen(server_fd, 5) < 0) {
 		die_error("Error Listen");
 	}
-
 	*conn_stat = 0;
 	while (1) {
 		client_fd = accept(server_fd, (struct sockaddr *) &cli_addr, &len);
@@ -378,12 +370,6 @@ int glem_init_server()
 		die("error allocating shared memory");
 	}
 	*conn_stat = 0;
-
-	glut_init = mmap(NULL, sizeof(int), prot, map, -1, 0);
-	if (glut_init == NULL) {
-		die("error allocating shared memory");
-	}
-	*glut_init = 0;
 
 	int pipe[2];
 	if (socketpair(PF_UNIX, SOCK_STREAM, 0, pipe)) {
@@ -443,9 +429,9 @@ void glem_compute_dimentions()
 
 void glem_parse_cla(int argc, char **argv)
 {
-	int opt, got_resolution=0, got_verbose=0, got_test=0, test_val=0;
+	int opt, got_resolution=0, got_verbose=0;
 	scale_factor = 2;
-	while ((opt = getopt(argc, argv, "vhr:s:t:")) != -1) {
+	while ((opt = getopt(argc, argv, "vhr:s:")) != -1) {
 		switch(opt) {
 		case 'r':
 			if (sscanf(optarg, "%dx%d", &glcd_width, &glcd_height) < 2) {
@@ -465,26 +451,16 @@ void glem_parse_cla(int argc, char **argv)
 		case 'v':
 			got_verbose = 1;
 			break;
-		case 't':
-			got_test = 1;
-			test_val = atoi(optarg);
-			break;
 		case 'h':
 			glem_usage();
 			exit(0);
 		default:// '?'
+			printf("glem: invalid arguement\n");
 			die_usage();
 		}
 	}
 	if (!got_resolution) {		// Can't assume defaults here. Both these
 		die_usage();		// are critical data. Hence mandated.
-	}
-	if (got_test) {
-		// Send one off commands to an already running glem server for for
-		// the given resolution. If a server is not running, glem_test will
-		// fail with an error.
-		//glem_test(test_val);
-		exit(0);
 	}
 	if (!got_verbose) {
 		glem_background();
@@ -499,7 +475,7 @@ int main(int argc, char **argv)
 
 	glem_init_server();
 	
-	glcd_buf = malloc(glcd_width * glcd_height / 8);
+	glcd_buf = calloc(glcd_width * glcd_height / 8, sizeof(uint8_t));
 	if (glcd_buf == NULL)
 		die("GLCD buf alloc failed");
 
@@ -523,7 +499,6 @@ int main(int argc, char **argv)
 	glLoadIdentity();
 	glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
 	glClear(GL_POINT_BIT);
-	*glut_init = 1;
 	glutMainLoop();	// This is blocking!
 	return 0;
 }

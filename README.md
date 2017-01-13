@@ -71,12 +71,13 @@ path.
 #include <glem.h>
 
 void glem_init(int glcd_width, int glcd_height, int flags);
-void glem_server_send(uint8_t *buf, int len);
+void glem_write(uint8_t *buf, int len);
+void glem_setpix(int x, int y, int color);
 ```
 In your application you will have to include glem.h in your project and
-replace low level SPI/I2C driver call with the `glem_server_send` function. Then
-compile your GLCD layer on GCC and link it with `-lglem` to get it to send data
-to an already running glem server. 
+replace low level SPI/I2C driver calls to `glcd_write` function with the 
+`glem_write` function. Then compile your GLCD layer on GCC and link it with 
+`-lglem` to get it to send data to an already running glem server. 
 
 How to use
 ----------------

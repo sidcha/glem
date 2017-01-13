@@ -1,0 +1,69 @@
+glem(1) -- A tiny Graphical LCD Emulator
+========================================
+
+
+SYNOPSIS
+--------
+`glem` -r <RES> [-s <SCALE>, ...]
+
+
+DESCRIPTION
+-----------
+GLEM is a tiny (minimal) graphical LCD emulator for embedded platforms and other
+small projects that need a one-off GUI to display some data without having to
+write too much GUI Code.
+
+Often, embedded developers realize UI enhancements only after seeing the
+firmware in running on the device. So the task of building a good UI is very
+time consuming. 
+
+This program aims to eliminate the round trip time involved in compiling,
+flashing, and checking the embedded device when working with GLCDs.  This is
+achieved by emulating a the GLCD in a window on your computer.
+
+
+OPTIONS
+-------
+* **-r** <RESOLUTION>:
+  	Resolution of GLCD in the format _**WIDTH**x**HEIGHT**_. So a GLCD with width
+  	128 pixels and height 64 pixels will call glem with -r _128x64_
+
+* **-s** <SCALE>:
+  	Specify a pixel scale value. Each pixel on your GLCD is represented by a
+  	cluster pixels in the shape of a square of side _SCALE_. Default is 1:2
+  	sacaling, same as -s2
+
+* **-v**:
+  	Display verbose debug outupt. When set, application doesn't go to
+  	background.
+
+* **-h**:
+  	Display a short help message.
+
+
+EXAMPLE
+-------
+Start the server with the your GLCD's resolution in pixels. Optionally, you could
+scale the GLCD display so it looks good on your computers screen. In the
+following example, glem is scaled 4 times (default is 2).
+
+	$ glem -r 128x63 -s4
+
+Once the glem server is running, you can set individual pixels on/off or write full
+frame buffers into to display. See lib-glem(3) for more details.
+
+
+BUGS
+----
+Report bugs to <siddharth@embedjournal.com> or Create an issue at
+https://github.com/cbsiddharth/glem.git/
+
+
+AUTHOR
+------
+Written by Siddharth Chandrasekaran <siddharth@embedjournal.com>.
+
+
+ALSO SEE
+--------
+lib-glem(3)

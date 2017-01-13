@@ -118,7 +118,7 @@ static int glem_connect()
 	return fd;
 }
 
-void glem_server_send(uint8_t *buf, int len)
+void glem_write(uint8_t *buf, int len)
 {
 	int ret, glem_fd;
 	glem_command_t *c= glem_make_cmd_frame(buf, len);
@@ -138,7 +138,7 @@ void glem_server_send(uint8_t *buf, int len)
 	free(c);
 }
 
-void glem_set_pixel(int x, int y, int color)
+void glem_setpix(int x, int y, int color)
 {
 	int ret, glem_fd;
 	glem_command_t *c= glem_make_cmd_set_pixel(x, y, color);

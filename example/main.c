@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 	probe_symbol(&glem_logo, &lw, &lh);
 	draw_symbol(&glem_logo, (w-lw)/2, (h-lh)/2);
 	glcd_set_pixel_direct(2,2, 1);
-	glcd_refresh();
+	//glcd_refresh();
 	return 0;
 }
 

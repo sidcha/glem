@@ -1,0 +1,69 @@
+lib-glem(3) -- API documentation for glem(1)
+============================================
+
+
+SYNOPSIS
+--------
+	#include <glem.h>
+
+	void glem_init(int glcd_width, int glcd_height, int flags);
+	void glem_write(uint8_t *buf, int len);
+	void glem_setpix(int x, int y, int color);
+
+
+DESCRIPTION
+-----------
+The application software will have to include `glem.h` and replace low level
+SPI/I2C driver calls such as `glcd_write` or `glcd_setpix` with the suitable
+alternatives provided by lib-glem to communicate with the server. See glem(1)
+for more details.
+
+
+INTERFACE
+---------
+glem provides the following API to communicate with the server. The server
+has to be launched before any of the following calls can be made.
+
+* void **glem_init**(int glcd_width, int glcd_height, int flags);:
+	Sets up state variables. Must be called before any other glem calls.
+
+* void **glem_write**(uint8_t *buf, int len);:
+	writes the frame buffer pointed to by _buf_ of lenth _len_ into the
+	display. The frame buffer has to be properly encoded (see _DATA
+	ENCODING_) to get desired output on screen.
+
+* void **glem_setpix**(int x, int y, int color);:
+	sets pixel _(x,y)_ with _color_.
+
+
+DATA ENCODING
+-------------
+Most commercially available GLCDs are 1 bit per pixel packed into bytes in two
+different ways.
+1. Row Major - MSB of first byte is pixel (0,0) and LSB is pixel (7,0). Second
+   byte represents pixels (8,0) to (15,0) and so on.
+2. Column Major - MSB of first byte is pixel (0,0) and LSB is pixel (0,7).
+   Second byte represents pixels (1,0) to (1,7) and so on.
+
+In both cases, typical application layer code has an array to store the bit map
+value. The length of the array would be, `buf_len = (glcd_width*glcd_height)/8`
+
+This buffer is what your embedded device writes out to the GLCD through the
+SPI/I2C bus. The glem server expects to receive this buffer to render the
+image.
+
+
+BUGS
+----
+Report bugs to <siddharth@embedjournal.com> or Create an issue at
+https://github.com/cbsiddharth/glem.git/
+
+
+AUTHOR
+------
+Written by Siddharth Chandrasekaran <siddharth@embedjournal.com>.
+
+
+ALSO SEE
+--------
+glem(1)

@@ -28,9 +28,14 @@
 #define GLEM_NO_FLAGS		0x00
 #define GLEM_INIT_DONE		0x01
 
+// For those who prefer camelCase over snake_case
+#define glemInit glem_init
+#define glemWrite glem_write
+#define glemSetPix glem_setpix
+
 void glem_init(int glcd_width, int glcd_height, int flags);
-void glem_server_send(uint8_t *buf, int len);
-void glem_set_pixel(int x, int y, int color);
+void glem_write(uint8_t *buf, int len);
+void glem_setpix(int x, int y, int color);
 
 #endif
 
