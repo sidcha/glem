@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// local files in the same directory.
+// the actual glem.h is included in glcd.c.
 #include "symbols.h"
 #include "fonts.h"
 #include "objects.h"
@@ -31,22 +33,36 @@
 
 int main(int argc, char *argv[])
 {
-	int w, h, lw, lh;
+	int w, h, logo_width, logo_height;
 	if (argc != 3) {
 		printf("Usage: %s <width> <height>\n", argv[0]);
 		exit(-1);
 	}
-	printf("start\n");
 	w = atoi(argv[1]);
 	h = atoi(argv[2]);
-	printf("glcd init\n");
-	glcd_init(w, h, GLCD_ROW_MAJOR);
-	printf("glcd init done\n");
 
-	probe_symbol(&glem_logo, &lw, &lh);
-	draw_symbol(&glem_logo, (w-lw)/2, (h-lh)/2);
+	if (w < 128 || h < 64) {
+		// the image we are about to write cannot fit
+		// nicely in resolutions less than 128x64.
+		printf("Error: resolution has to be 128x64 or greater.\n");
+		exit(1);
+	}
+
+	// init GLCD and glem layer.
+	glcd_init(w, h, GLCD_ROW_MAJOR);
+
+	// get the symbols widht and height.
+	probe_symbol(&glem_logo, &logo_width, &logo_height);
+
+	// center the logo on awailable space and then draw.
+	draw_symbol(&glem_logo, (w-logo_width)/2, (h-logo_height)/2);
+
+	// calls glem_write with the complete frame buffer.
+	glcd_refresh();
+	
+	// you can also set pixels directly!
 	glcd_set_pixel_direct(2,2, 1);
-	//glcd_refresh();
+
 	return 0;
 }
 

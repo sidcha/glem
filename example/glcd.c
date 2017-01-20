@@ -48,12 +48,12 @@ uint8_t *glcd_buf;
 void glcd_clear()
 {
 	memset(glcd_buf, 0x00, glcd_width/8*glcd_height);
-	glem_server_send(glcd_buf, glcd_width/8*glcd_height);
+	glem_write(glcd_buf, glcd_width/8*glcd_height);
 }
 
 void glcd_refresh()
 {
-	glem_server_send(glcd_buf, glcd_width/8*glcd_height);
+	glem_write(glcd_buf, glcd_width/8*glcd_height);
 }
 
 void glcd_init(int width, int height, int flags)
@@ -66,14 +66,12 @@ void glcd_init(int width, int height, int flags)
 		printf("[ ! ] Error: glcd buffer alloc failed!\n");
 		exit(-1);
 	}
-	printf("glem init..\n");
 	glem_init(width, height, flags);
-	printf("glem init done\n");
 }
 
 void glcd_set_pixel_direct(int x, int y, int color)
 {
-	glem_set_pixel(x, y, color);
+	glem_setpix(x, y, color);
 }
 
 void glcd_set_pixel(int x, int y, int color)
