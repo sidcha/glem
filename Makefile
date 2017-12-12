@@ -17,7 +17,7 @@
 
 
 CC       := gcc
-CC_FLAGS := -Wall -O3 -Iinc -Llib
+CC_FLAGS := -Wall -O3 -Iinclude -Llib
 LIBS     := -lGL -lGLU -lglut
 INST_PATH:= /usr/local
 MAN_PATH := ${INST_PATH}/share/man
