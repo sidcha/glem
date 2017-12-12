@@ -15,63 +15,81 @@
 #    Created: 07-May-2016
 #    Author: Siddharth Chandrasekaran <siddharth@embedjournal.com>
 
+CC_FLAGS     += -Wall -O3
+INCLUDE_PATH += -Iinclude
+LIB_PATH     += -Llib
+
+ifeq ($(OS),Windows_NT)
+    ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
+        CCFLAGS += -D AMD64
+    else
+        ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+            CCFLAGS += -D AMD64
+        endif
+        ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+            CCFLAGS += -D IA32
+        endif
+    endif
+    CCFLAGS       += -D WIN32
+    LDFLAGS       += -Wl,--subsystem,windows
+    INCLUDE_PATH  += -I"C:\Program Files\freeglut\include"
+    LIB_PATH      += -L"C:\Program Files\freeglut\lib\x64"
+    LIBS          := -lfreeglut -lopengl32
+    GLEM_BIN      := Glem.exe
+    EXAMPLE_BIN   := Example.exe
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        CCFLAGS += -D LINUX
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        CCFLAGS += -D OSX
+    endif
+    UNAME_P := $(shell uname -p)
+    ifeq ($(UNAME_P),x86_64)
+        CCFLAGS += -D AMD64
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+        CCFLAGS += -D IA32
+    endif
+    ifneq ($(filter arm%,$(UNAME_P)),)
+        CCFLAGS += -D ARM
+    endif
+    LIBS        := -lGL -lGLU -lglut
+    GLEM_BIN    := glem
+    EXAMPLE_BIN := example
+endif
 
 CC       := gcc
-CC_FLAGS := -Wall -O3 -Iinclude -Llib
-LIBS     := -lGL -lGLU -lglut
-INST_PATH:= /usr/local
-MAN_PATH := ${INST_PATH}/share/man
-ELF      := glem
+LIBS     += -lglem -pthread
 
-
-all: dirs libglem glem
-
+all: dirs libglem glem example
 
 glem: obj/glem.o
-	@$(CC) $(CC_FLAGS) -o $@ $^ $(LIBS) -lglem -pthread
-
+	@$(CC) $(LDFLAGS) -o bin/$(GLEM_BIN) $^ $(LIB_PATH) $(LIBS)
 
 libglem: obj/libglem.o
 	@ar rcs lib/libglem.a obj/libglem.o
 
-
-install: glem
-	@mkdir -p ${INST_PATH}/bin
-	@mkdir -p ${INST_PATH}/include
-	@mkdir -p ${INST_PATH}/lib
-	@mkdir -p ${MAN_PATH}/man1
-	@mkdir -p ${MAN_PATH}/man3
-	@install -m 755 ${ELF} ${INST_PATH}/bin
-	@cp lib/libglem.a ${INST_PATH}/lib
-	@cp inc/glem.h ${INST_PATH}/include
-	@cp doc/glem.1 ${MAN_PATH}/man1/
-	@cp doc/lib-glem.3 ${MAN_PATH}/man3/
-
-
-uninstall:
-	@rm -rf ${INST_PATH}/bin/${ELF}
-	@rm -rf ${INST_PATH}/lib/libglem.a
-	@rm -rf ${INST_PATH}/include/glem.h
-	@rm -rf ${MAN_PATH}/man1/glem.1
-	@rm -rf ${MAN_PATH}/man3/lib-glem.3
-
+example: obj/glcd.o obj/fonts.o obj/symbols.o obj/main.o
+	@$(CC) $(LDFLAGS) -o bin/$(EXAMPLE_BIN) $^ $(LIB_PATH) $(LIBS)
 
 manpages:
 	@echo "Regenerating man pages from markdown"
 	@ronn  -r doc/glem.ronn doc/lib-glem.ronn
 
+obj/%.o: example/%.c
+	@echo "Compiling $<"
+	@$(CC) $(CCFLAGS) -o "$@" -c "$<" $(INCLUDE_PATH)
 
 obj/%.o: src/%.c
 	@echo "Compiling $<"
-	@$(CC) $(CC_FLAGS) -o "$@" -c "$<"
-
+	@$(CC) $(CCFLAGS) -o "$@" -c "$<" $(INCLUDE_PATH)
 
 dirs:
-	@mkdir -p obj lib inc
-
+	@mkdir -p obj lib bin
 
 clean:
-	@rm -rf obj/* lib/* glem
+	@rm -rf bin/* obj/* lib/*
 
-
-.PHONY: clean glem dirs install uninstall manpages
+.PHONY: clean glem dirs manpages

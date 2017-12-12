@@ -410,7 +410,9 @@ int main(int argc, char **argv)
 			GLEM_VER_MIN, glcd_width, glcd_height, scale_factor);
 	win_name[63]=0; // paranoia: force terminate.
 
-	glutCreateWindow(win_name);
+	int win_id = glutCreateWindow(win_name);
+	glutSetWindow(win_id);
+	glutDisplayFunc(glut_redraw_screen);
 	glClearColor(1.0, 1.0, 1.0, 0.0);
 	glColor3f(255.0, 255.0, 255.0);
 	glMatrixMode(GL_PROJECTION);
