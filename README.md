@@ -1,5 +1,5 @@
-**GLEM** - **G**raphical **L**CD **Em**ulator
-=======================
+**GLEM** - Graphical LCD Emulator
+=================================
 
 GLEM is a tiny (minimal) graphical LCD emulator for embedded platforms and other
 small projects that need a one-off GUI to display some data without having to
@@ -14,37 +14,28 @@ flashing, and checking the embedded device when working with GLCDs.  This is
 achieved by emulating a the GLCD in a window on your computer.
 
 Dependencies
--------
-glem depends on the the following packages. 
+------------
+GLEM uses OpenGL and FreeGLUT3. On linux you will have to install the following
+packages to build GLEM.
 
 * freeglut3
 * freeglut3-dev
 
-You will also need the following packages. Ignore if you already have them.
-
-* git
-
-So you will have to install them to compile GLEM. Copy paste the following if
-relevant,
-```sh
-$ sudo apt-get install freeglut3 freeglut3-dev git
-```
+On windows, you can install MinGW GCC and FreeGLUT3 from [here][1].
 
 Installation
--------
-Start by cloning the repository into your computer.
-```sh
-$ git clone https://github.com/cbsiddharth/glem.git
-$ cd glem
-```
-Compile the sources to produce glem binary with,
+------------
+
+Clone the repository and switch to the cloned directory. Compile the sources
+to produce glem binary with,
+
 ```sh
 $ make
 $ sudo make install  # (optional)
 ```
 
 Description
--------
+-----------
 
 **Data Encoding:**
 
@@ -109,3 +100,4 @@ The git upstream for this project is hosted at [github](http://github.com/cbsidd
 You can report bugs to siddharth@embedjournal.com or create an issue there.
 This project is in active development, patches are welcome.
 
+[1]: http://www.transmissionzero.co.uk/software/freeglut-devel/

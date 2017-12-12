@@ -1,27 +1,19 @@
-############################################################################
-#                                                                          #
-#  This program is free software: you can redistribute it and/or modify    #
-#  it under the terms of the GNU General Public License as published by    #
-#  the Free Software Foundation, either version 3 of the License, or       #
-#  (at your option) any later version.                                     #
-#                                                                          #
-#  This program is distributed in the hope that it will be useful,         #
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of          #
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           #
-#  GNU General Public License for more details.                            #
-#                                                                          #
-#  You should have received a copy of the GNU General Public License       #
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.   #
-#                                                                          #
-############################################################################
-
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-#        File: glem/src/glcd.c
-#  Created on: 07-May-2016
-#      Author: Siddharth Chandrasekaran
-#        Mail: siddharth@embedjournal.com
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#    File: glem/Makefile
+#    Created: 07-May-2016
+#    Author: Siddharth Chandrasekaran <siddharth@embedjournal.com>
 
 
 CC       := gcc
@@ -32,11 +24,11 @@ MAN_PATH := ${INST_PATH}/share/man
 ELF      := glem
 
 
-all: dirs libglem glem 
+all: dirs libglem glem
 
 
-glem: obj/glem.o obj/passfd.o
-	@$(CC) $(CC_FLAGS) -o $@ $^ $(LIBS) -lglem
+glem: obj/glem.o
+	@$(CC) $(CC_FLAGS) -o $@ $^ $(LIBS) -lglem -pthread
 
 
 libglem: obj/libglem.o
@@ -83,5 +75,3 @@ clean:
 
 
 .PHONY: clean glem dirs install uninstall manpages
-
-
