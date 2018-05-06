@@ -23,7 +23,10 @@
 
 ROOT_DIR := ../..
 
+all: pixel-by-pixel
+
 pixel-by-pixel:
+	@echo "Building example $@"
 	@gcc -Wall -O3 -o $@ main.c -lglem -L$(ROOT_DIR)/lib -I$(ROOT_DIR)/include
 
 clean:

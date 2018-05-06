@@ -63,33 +63,32 @@ endif
 CC       := gcc
 LIBS     += -lglem -pthread
 
-all: dirs libglem glem example
+all: dirs lib/libglem.a glem examples
 
 glem: obj/glem.o
-	@$(CC) $(LDFLAGS) -o bin/$(GLEM_BIN) $^ $(LIB_PATH) $(LIBS)
+	@echo "Building glem server"
+	@$(CC) $(LDFLAGS) -o $(GLEM_BIN) $^ $(LIB_PATH) $(LIBS)
 
-libglem: obj/libglem.o
+lib/libglem.a: obj/libglem.o
+	@echo "Building libglem.a"
 	@ar rcs lib/libglem.a obj/libglem.o
 
-example: obj/glcd.o obj/fonts.o obj/symbols.o obj/main.o
-	@$(CC) $(LDFLAGS) -o bin/$(EXAMPLE_BIN) $^ $(LIB_PATH) $(LIBS)
+examples:
+	@make -s -C examples all
 
 manpages:
 	@echo "Regenerating man pages from markdown"
 	@ronn  -r doc/glem.ronn doc/lib-glem.ronn
-
-obj/%.o: example/%.c
-	@echo "Compiling $<"
-	@$(CC) $(CCFLAGS) -o "$@" -c "$<" $(INCLUDE_PATH)
 
 obj/%.o: src/%.c
 	@echo "Compiling $<"
 	@$(CC) $(CCFLAGS) -o "$@" -c "$<" $(INCLUDE_PATH)
 
 dirs:
-	@mkdir -p obj lib bin
+	@mkdir -p obj lib
 
 clean:
-	@rm -rf bin/* obj/* lib/*
+	@make -s -C examples clean
+	@rm -rf obj/* lib/* $(GLEM_BIN)
 
-.PHONY: clean glem dirs manpages
+.PHONY: clean glem dirs manpages examples

@@ -23,14 +23,16 @@
 
 ROOT_DIR := ../..
 
+all: draw-symbol
+
 draw-symbol: glcd.o fonts.o symbols.o main.o
+	@echo "Building example $@"
 	@gcc -Wall -O3 -o $@ $^ -lglem -L$(ROOT_DIR)/lib
 
 clean:
 	@rm -rf example *.o
 
 %.o: %.c
-	@echo "Compiling examples/draw-symbol/$<"
 	@gcc -Wall -O3 -o $@ -c $< -I$(ROOT_DIR)/include
 
 .PHONY: clean dirs draw-symbol
