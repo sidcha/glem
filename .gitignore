@@ -1,10 +1,11 @@
+tags
+glem
+
 bin/
 obj/
 lib/
 loc/
-glem
-example/example
-example/*.o
+
 .cproject
 .project
 .settings/

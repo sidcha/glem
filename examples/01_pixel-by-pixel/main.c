@@ -15,29 +15,31 @@
  **************************************************************************/
 
 /*
- *        File: glem.h
- *  Created on: 1-Jan-2017
+ *        File: glem/src/glem-client.c
+ *  Created on: 07-May-2016
  *      Author: Siddharth Chandrasekaran
  *        Mail: siddharth@embedjournal.com
  */
 
+#include <stdio.h>
+#include <stdlib.h>
 
-#ifndef _GLEM_H_
-#define _GLEM_H_
+#include <glem.h>
 
-#include <stdint.h>
+int main(int argc, char *argv[])
+{
+	int w, h;
+	if (argc != 3) {
+		printf("Usage: %s <width> <height>\n", argv[0]);
+		exit(-1);
+	}
+	w = atoi(argv[1]);
+	h = atoi(argv[2]);
 
-#define GLEM_NO_FLAGS		0x00
-#define GLEM_INIT_DONE		0x01
+	glem_init(w, h, 0);
 
-// For those who prefer camelCase over snake_case
-#define glemInit glem_init
-#define glemWrite glem_write
-#define glemSetPix glem_setpix
+	glem_setpix(2, 2, 1);
 
-void glem_init(int glcd_width, int glcd_height, int flags);
-void glem_write(uint8_t *buf, int len);
-void glem_setpix(int x, int y, int color);
-
-#endif
+	return 0;
+}
 
