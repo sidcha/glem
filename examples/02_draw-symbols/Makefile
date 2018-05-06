@@ -30,7 +30,7 @@ draw-symbol: glcd.o fonts.o symbols.o main.o
 	@gcc -Wall -O3 -o $@ $^ -lglem -L$(ROOT_DIR)/lib
 
 clean:
-	@rm -rf example *.o
+	@rm -rf draw-symbol *.o
 
 %.o: %.c
 	@gcc -Wall -O3 -o $@ -c $< -I$(ROOT_DIR)/include
