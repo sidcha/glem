@@ -89,6 +89,6 @@ dirs:
 
 clean:
 	@make -s -C examples clean
-	@rm -rf obj/* lib/* $(GLEM_BIN)
+	@rm -rf obj/ lib/ $(GLEM_BIN)
 
 .PHONY: clean glem dirs manpages examples
