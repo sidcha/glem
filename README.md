@@ -46,8 +46,14 @@ different ways.
 2. Column Major - MSB of first byte is pixel (0,0) and LSB is pixel (0,7).
    Second byte represents pixels (1,0) to (1,7) and so on.
 
-In both cases, typical application layer code has an array to store the bit map
-value. The length of the array would be, `buf_len = (glcd_width*glcd_height)/8`
+*Note:* Here, assume that origin (0,0) is at top left corner of the GLCD. 
+
+In both cases, typical application layer code has an array (back-planes) to
+store the bitmap value. The length of the array would be,
+    
+```c
+buf_len = (glcd_width*glcd_height)/8
+```
 
 This buffer is what your embedded device writes out to the GLCD through the
 SPI/I2C bus. The glem server expects to receive this buffer to render the
@@ -80,24 +86,23 @@ following example, glem is scaled 4 times.
 $ glem -r 128x63 -s4
 ```
 Once the server has been launched (you should see a new window), it sets up a
-UNIX domain socket at /tmp/. Your application can connect to this socket and
-write the bitmap array data to be displayed. 
+TCP server for your application to connect and write bitmaps or individual bits.
+See `examples/` for more details.
 
-Once the server is launched, you can test the server (same resolution) with 
-some fixed data to see if you are able to write something.
-
-```sh
-$ glem -r 128x64 -t 85  # some lines
-$ glem -r 128x64 -t 0   # clear the display
-$ glem -r 128x64 -t 255 # set all pixels
-```
 Have a look at the example dir to get an idea of how your application should
 be structured.
 
 ### Bugs and Patches.
 
-The git upstream for this project is hosted at [github](http://github.com/cbsiddharth/glem.git).
-You can report bugs to siddharth@embedjournal.com or create an issue there.
-This project is in active development, patches are welcome.
+The git upstream for this project is hosted at [github][2], you can raise a PR
+(prefered) or you can send the patch to my mail and I will commit on your
+behalf.
+
+To report bugs/issues, you can create an issue in github project page (prefered)
+or you can write an email to me with the description.
+
+*Author:* Siddharth Chandrasekaran
+*Email:* siddharth@embedjournal.com
 
 [1]: http://www.transmissionzero.co.uk/software/freeglut-devel/
+[2]: http://github.com/cbsiddharth/glem.git

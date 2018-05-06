@@ -45,6 +45,8 @@ different ways.
 2. Column Major - MSB of first byte is pixel (0,0) and LSB is pixel (0,7).
    Second byte represents pixels (1,0) to (1,7) and so on.
 
+**Note:** Here, assume that origin (0,0) is at top left corner of the GLCD.
+
 In both cases, typical application layer code has an array to store the bit map
 value. The length of the array would be, `buf_len = (glcd_width*glcd_height)/8`
 

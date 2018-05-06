@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "LIB\-GLEM" "3" "January 2017" "" ""
+.TH "LIB\-GLEM" "3" "2018-05-06" "" ""
 .
 .SH "NAME"
 \fBlib\-glem\fR \- API documentation for glem(1)
@@ -38,6 +38,9 @@ sets pixel \fI(x,y)\fR with \fIcolor\fR\.
 .
 .SH "DATA ENCODING"
 Most commercially available GLCDs are 1 bit per pixel packed into bytes in two different ways\. 1\. Row Major \- MSB of first byte is pixel (0,0) and LSB is pixel (7,0)\. Second byte represents pixels (8,0) to (15,0) and so on\. 2\. Column Major \- MSB of first byte is pixel (0,0) and LSB is pixel (0,7)\. Second byte represents pixels (1,0) to (1,7) and so on\.
+.
+.P
+\fBNote:\fR Here, assume that origin (0,0) is at top left corner of the GLCD\.
 .
 .P
 In both cases, typical application layer code has an array to store the bit map value\. The length of the array would be, \fBbuf_len = (glcd_width*glcd_height)/8\fR
