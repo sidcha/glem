@@ -1,3 +1,5 @@
+<img align="center" src="https://user-images.githubusercontent.com/22770735/92944941-3fad6a00-f472-11ea-85e5-2cc65f6577a3.png" />
+
 **GLEM** - Graphical LCD Emulator
 =================================
 
